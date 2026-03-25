@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Environment files — NEVER commit these
+.env
+.env.local
+.env.*.local
+showup-api/.env
+
+# Build outputs
+dist/
+build/
+
+# Go
+showup-api/showup-api
+
+# Misc
+.DS_Store
+*.log
+.vercel
