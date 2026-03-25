@@ -1,5 +1,8 @@
 // Shared TypeScript types across the app
 
+export type Intensity = "soft" | "firm" | "non_negotiable"
+export type CommitmentTag = "work" | "learning" | "health" | "relationships" | "other"
+
 export interface User {
   id: string
   email: string
