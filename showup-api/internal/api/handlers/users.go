@@ -185,17 +185,17 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		 FROM users WHERE id = $1`, userID,
 	)
 	var u struct {
-		ID                     string  `json:"id"`
-		Email                  string  `json:"email"`
-		Username               string  `json:"username"`
-		DisplayName            string  `json:"display_name"`
-		AvatarURL              *string `json:"avatar_url"`
-		Timezone               string  `json:"timezone"`
-		PersonaLevel           int16   `json:"persona_level"`
-		StreakFreezesRemaining int16   `json:"streak_freezes_remaining"`
-		AvailabilityMood       *string `json:"availability_mood"`
-		OnboardingComplete     bool    `json:"onboarding_complete"`
-		CreatedAt              string  `json:"created_at"`
+		ID                     string     `json:"id"`
+		Email                  string     `json:"email"`
+		Username               string     `json:"username"`
+		DisplayName            string     `json:"display_name"`
+		AvatarURL              *string    `json:"avatar_url"`
+		Timezone               string     `json:"timezone"`
+		PersonaLevel           int16      `json:"persona_level"`
+		StreakFreezesRemaining int16      `json:"streak_freezes_remaining"`
+		AvailabilityMood       *string    `json:"availability_mood"`
+		OnboardingComplete     bool       `json:"onboarding_complete"`
+		CreatedAt              time.Time  `json:"created_at"`
 	}
 	if err := row.Scan(&u.ID, &u.Email, &u.Username, &u.DisplayName, &u.AvatarURL,
 		&u.Timezone, &u.PersonaLevel, &u.StreakFreezesRemaining, &u.AvailabilityMood,

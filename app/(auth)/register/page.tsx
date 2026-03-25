@@ -23,7 +23,7 @@ export default function RegisterPage() {
     }
     setLoading(true)
     try {
-      await signUp.email({ email, password, name: displayName })
+      await signUp.email({ email, password, name: displayName, username })
       router.push("/declare")
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registration failed")
