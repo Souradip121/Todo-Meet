@@ -77,7 +77,8 @@ func (h *DeclarationHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Date        string    `json:"date"`
 		SubmittedAt time.Time `json:"submitted_at"`
 	}
-	if err := row.Scan(&decl.ID, &decl.UserID, &decl.Date, &decl.SubmittedAt); err != nil {
+	var declDateRaw time.Time
+	if err := row.Scan(&decl.ID, &decl.UserID, &declDateRaw, &decl.SubmittedAt); err != nil {
 		if isUniqueViolation(err) {
 			jsonError(w, "declaration already submitted today", http.StatusConflict)
 			return
@@ -86,6 +87,8 @@ func (h *DeclarationHandler) Create(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+
+	decl.Date = declDateRaw.Format("2006-01-02")
 
 	// Insert commitments
 	commitments := make([]map[string]interface{}, 0, len(req.Commitments))
@@ -136,9 +139,10 @@ func (h *DeclarationHandler) Today(w http.ResponseWriter, r *http.Request) {
 		`SELECT id, user_id, date, submitted_at FROM declarations WHERE user_id=$1 AND date=$2`,
 		userID, today,
 	)
-	var declID, declUserID, declDate string
+	var declID, declUserID string
+	var declDateRaw2 time.Time
 	var declSubmitted time.Time
-	if err := row.Scan(&declID, &declUserID, &declDate, &declSubmitted); err != nil {
+	if err := row.Scan(&declID, &declUserID, &declDateRaw2, &declSubmitted); err != nil {
 		// No declaration today
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(nil)
@@ -183,7 +187,7 @@ func (h *DeclarationHandler) Today(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"id":           declID,
 		"user_id":      declUserID,
-		"date":         declDate,
+		"date":         declDateRaw2.Format("2006-01-02"),
 		"submitted_at": declSubmitted,
 		"commitments":  commitments,
 	})
@@ -213,13 +217,14 @@ func (h *DeclarationHandler) History(w http.ResponseWriter, r *http.Request) {
 
 	result := []map[string]interface{}{}
 	for rows.Next() {
-		var id, uid, date string
+		var id, uid string
+		var dateRaw time.Time
 		var submitted time.Time
-		if err := rows.Scan(&id, &uid, &date, &submitted); err != nil {
+		if err := rows.Scan(&id, &uid, &dateRaw, &submitted); err != nil {
 			continue
 		}
 		result = append(result, map[string]interface{}{
-			"id": id, "user_id": uid, "date": date, "submitted_at": submitted,
+			"id": id, "user_id": uid, "date": dateRaw.Format("2006-01-02"), "submitted_at": submitted,
 		})
 	}
 

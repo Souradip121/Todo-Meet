@@ -17,7 +17,7 @@ CREATE TABLE commitments (
     created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_commitments_user_date ON commitments(user_id, (created_at::date));
+CREATE INDEX idx_commitments_user_date ON commitments(user_id, created_at);
 CREATE INDEX idx_commitments_tag       ON commitments(user_id, tag);
 
 -- +goose Down

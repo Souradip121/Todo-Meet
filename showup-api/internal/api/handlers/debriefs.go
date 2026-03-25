@@ -67,12 +67,14 @@ func (h *DebriefHandler) Create(w http.ResponseWriter, r *http.Request) {
 	)
 
 	var d models.EODDebrief
-	if err := row.Scan(&d.ID, &d.UserID, &d.Date, &d.WhatMoved, &d.WhatDidnt,
+	var debriefDateRaw time.Time
+	if err := row.Scan(&d.ID, &d.UserID, &debriefDateRaw, &d.WhatMoved, &d.WhatDidnt,
 		&d.Mood, &d.Energy, &d.SubmittedAt); err != nil {
 		slog.Error("create debrief", "error", err)
 		jsonError(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+	d.Date = debriefDateRaw.Format("2006-01-02")
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -98,12 +100,14 @@ func (h *DebriefHandler) ByDate(w http.ResponseWriter, r *http.Request) {
 	)
 
 	var d models.EODDebrief
-	if err := row.Scan(&d.ID, &d.UserID, &d.Date, &d.WhatMoved, &d.WhatDidnt,
+	var byDateRaw time.Time
+	if err := row.Scan(&d.ID, &d.UserID, &byDateRaw, &d.WhatMoved, &d.WhatDidnt,
 		&d.Mood, &d.Energy, &d.SubmittedAt); err != nil {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(nil)
 		return
 	}
+	d.Date = byDateRaw.Format("2006-01-02")
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(d)
 }

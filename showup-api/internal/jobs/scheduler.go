@@ -3,6 +3,7 @@ package jobs
 import (
 	"context"
 	"log/slog"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/robfig/cron/v3"
@@ -15,7 +16,7 @@ type Scheduler struct {
 }
 
 func NewScheduler(db *pgxpool.Pool) *Scheduler {
-	c := cron.New(cron.WithSeconds(), cron.WithLocation(nil)) // UTC; per-user tz handled inside job
+	c := cron.New(cron.WithSeconds(), cron.WithLocation(time.UTC)) // UTC; per-user tz handled inside job
 	return &Scheduler{c: c, db: db}
 }
 
