@@ -5,6 +5,17 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { signIn } from "@/lib/auth-client"
 
+const inputStyle: React.CSSProperties = {
+  width: "100%", background: "var(--paper)", border: "1.5px solid var(--card-border)",
+  color: "var(--ink)", fontFamily: "var(--font-lora), serif", fontSize: "0.9rem",
+  height: "2.6rem", padding: "0 0.75rem", outline: "none",
+}
+const labelStyle: React.CSSProperties = {
+  fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem",
+  letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ink-faint)",
+  display: "block", marginBottom: "0.4rem",
+}
+
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
@@ -27,63 +38,53 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-slate-50">showup.day</h1>
-        <p className="text-sm text-slate-400 mt-1">Sign in to your account</p>
+    <div style={{ background: "var(--card-bg)", border: "1.5px solid var(--card-border)", padding: "2.5rem" }}>
+      <div style={{ marginBottom: "2rem" }}>
+        <h1 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "1.75rem", fontWeight: 900, color: "var(--ink)", letterSpacing: "-0.02em", marginBottom: "0.3rem" }}>
+          show<span style={{ color: "var(--red-ink)" }}>up</span>.day
+        </h1>
+        <p style={{ fontFamily: "var(--font-lora), serif", fontSize: "0.9rem", color: "var(--ink-muted)" }}>
+          Sign in to your account
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
         <div>
-          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider block mb-2">
-            Email
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full bg-[#0A0A0F] border border-[#1E1E2E] text-slate-50 placeholder:text-slate-600 focus:border-indigo-500/50 focus:outline-none rounded-lg h-10 px-3 text-sm"
-            placeholder="you@example.com"
+          <label style={labelStyle}>Email</label>
+          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required
+            placeholder="you@example.com" style={inputStyle}
+            onFocus={(e) => { e.currentTarget.style.borderColor = "var(--red-ink)" }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = "var(--card-border)" }}
           />
         </div>
-
         <div>
-          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider block mb-2">
-            Password
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full bg-[#0A0A0F] border border-[#1E1E2E] text-slate-50 placeholder:text-slate-600 focus:border-indigo-500/50 focus:outline-none rounded-lg h-10 px-3 text-sm"
-            placeholder="••••••••"
+          <label style={labelStyle}>Password</label>
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required
+            placeholder="••••••••" style={inputStyle}
+            onFocus={(e) => { e.currentTarget.style.borderColor = "var(--red-ink)" }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = "var(--card-border)" }}
           />
         </div>
 
         {error && (
-          <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+          <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.75rem", color: "var(--red-ink)", background: "rgba(185,28,28,0.06)", border: "1px solid rgba(185,28,28,0.2)", padding: "0.5rem 0.75rem" }}>
             {error}
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium h-10 rounded-lg transition-colors text-sm"
-        >
-          {loading ? "Signing in…" : "Sign in"}
+        <button type="submit" disabled={loading} style={{
+          background: loading ? "var(--ink-muted)" : "var(--ink)", color: "var(--paper)",
+          border: "none", height: "2.6rem", fontFamily: "var(--font-ibm-mono), monospace",
+          fontSize: "0.82rem", letterSpacing: "0.05em", cursor: loading ? "not-allowed" : "pointer", marginTop: "0.25rem",
+        }}>
+          {loading ? "Signing in…" : "Sign in →"}
         </button>
       </form>
 
-      <div className="h-px bg-[#1E1E2E] my-6" />
-
-      <p className="text-sm text-slate-400 text-center">
+      <div style={{ height: "1px", background: "var(--rule)", margin: "1.5rem 0" }} />
+      <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.72rem", color: "var(--ink-faint)", textAlign: "center" }}>
         No account?{" "}
-        <Link href="/register" className="text-indigo-400 hover:text-indigo-300 transition-colors">
-          Register
-        </Link>
+        <Link href="/register" style={{ color: "var(--red-ink)", textDecoration: "none" }}>Register</Link>
       </p>
     </div>
   )

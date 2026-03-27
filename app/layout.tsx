@@ -1,16 +1,24 @@
 import type { Metadata } from "next"
-import { Geist, Geist_Mono } from "next/font/google"
+import { Playfair_Display, IBM_Plex_Mono, Lora } from "next/font/google"
 import "./globals.css"
 import { Providers } from "@/components/providers"
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
   subsets: ["latin"],
+  weight: ["700", "900"],
 })
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const ibmMono = IBM_Plex_Mono({
+  variable: "--font-ibm-mono",
   subsets: ["latin"],
+  weight: ["400", "500"],
+})
+
+const lora = Lora({
+  variable: "--font-lora",
+  subsets: ["latin"],
+  weight: ["400", "500"],
 })
 
 export const metadata: Metadata = {
@@ -26,7 +34,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${playfair.variable} ${ibmMono.variable} ${lora.variable} antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>

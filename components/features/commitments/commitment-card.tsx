@@ -25,20 +25,20 @@ export function CommitmentCard({ commitment, logs = [], streak = 0 }: Commitment
   return (
     <Link
       href={`/commitments/${commitment.id}`}
-      className="block bg-[#111118] border border-[#1E1E2E] hover:border-indigo-500/30 rounded-xl p-6 transition-colors"
+      className="block bg-[var(--card-bg)] border border-[var(--card-border)] hover:border-[rgba(185,28,28,0.3)] rounded-xl p-6 transition-colors"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-2">
           <span className="text-2xl">{commitment.emoji}</span>
           <div>
-            <p className="text-sm font-medium text-slate-50">{commitment.name}</p>
-            <p className="text-xs text-slate-600">{commitment.period_days}d · {endLabel}</p>
+            <p className="text-sm font-medium text-[var(--ink)]">{commitment.name}</p>
+            <p className="text-xs text-[var(--ink-faint)]">{commitment.period_days}d · {endLabel}</p>
           </div>
         </div>
         {streak > 0 && (
           <div className="flex items-center gap-1 shrink-0">
-            <Flame className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-xs font-mono font-medium text-slate-50">{streak}</span>
+            <Flame className="w-3.5 h-3.5 text-[var(--amber-ink)]" />
+            <span className="text-xs font-mono font-medium text-[var(--ink)]">{streak}</span>
           </div>
         )}
       </div>

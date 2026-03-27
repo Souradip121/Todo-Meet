@@ -2,29 +2,27 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Flame, Plus, ChevronDown, ChevronUp, Check } from "lucide-react"
+import { Plus, ChevronDown, ChevronUp, Check } from "lucide-react"
 import { useTodayCommitments } from "@/hooks/use-recurring-commitments"
 import { LogForm } from "@/components/features/commitments/log-form"
 import type { TodayCommitment } from "@/lib/types"
 
-function calcStreak(commitmentId: string, todayLogged: boolean) {
-  // Streak is server-side; we show from the commitment data
-  return todayLogged ? "✓" : null
+function fmtMins(m: number) {
+  if (m >= 60) return `${Math.floor(m / 60)}h${m % 60 > 0 ? ` ${m % 60}m` : ""}`
+  return `${m} min`
 }
 
 export default function TodayPage() {
   const { data: commitments, isPending } = useTodayCommitments()
   const [expanded, setExpanded] = useState<string | null>(null)
 
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "short", month: "short", day: "numeric",
-  })
+  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
 
   if (isPending) {
     return (
       <div className="max-w-lg mx-auto space-y-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-6 animate-pulse h-20" />
+          <div key={i} className="animate-pulse h-20" style={{ background: "var(--card-bg)", border: "1.5px solid var(--card-border)" }} />
         ))}
       </div>
     )
@@ -33,16 +31,13 @@ export default function TodayPage() {
   if (!commitments || commitments.length === 0) {
     return (
       <div className="max-w-lg mx-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-slate-50">Today</h1>
-          <p className="text-sm text-slate-400 mt-1">{today}</p>
+        <div style={{ marginBottom: "2rem" }}>
+          <h1 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "2rem", fontWeight: 900, color: "var(--ink)", letterSpacing: "-0.02em" }}>Today</h1>
+          <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.72rem", letterSpacing: "0.1em", color: "var(--ink-faint)", marginTop: "0.3rem" }}>{today}</p>
         </div>
-        <div className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-12 flex flex-col items-center gap-3">
-          <p className="text-sm text-slate-400">No active commitments yet.</p>
-          <Link
-            href="/commitments"
-            className="text-sm text-indigo-400 hover:text-indigo-300 transition-colors"
-          >
+        <div style={{ background: "var(--card-bg)", border: "1.5px solid var(--card-border)", padding: "3rem", textAlign: "center" }}>
+          <p style={{ fontFamily: "var(--font-lora), serif", fontSize: "0.95rem", color: "var(--ink-muted)", marginBottom: "1rem" }}>No active commitments yet.</p>
+          <Link href="/commitments" style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.75rem", color: "var(--red-ink)", letterSpacing: "0.05em", textDecoration: "none" }}>
             Create your first commitment →
           </Link>
         </div>
@@ -54,84 +49,68 @@ export default function TodayPage() {
 
   return (
     <div className="max-w-lg mx-auto">
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between" style={{ marginBottom: "2rem" }}>
         <div>
-          <h1 className="text-2xl font-semibold text-slate-50">Today</h1>
-          <p className="text-sm text-slate-400 mt-1">{today}</p>
+          <h1 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "2rem", fontWeight: 900, color: "var(--ink)", letterSpacing: "-0.02em" }}>Today</h1>
+          <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.72rem", letterSpacing: "0.1em", color: "var(--ink-faint)", marginTop: "0.3rem" }}>{today}</p>
         </div>
-        <p className="text-sm font-mono text-slate-400 mt-1">
+        <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.85rem", color: "var(--ink-muted)", marginTop: "0.25rem" }}>
           {loggedCount}/{commitments.length}
         </p>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {commitments.map((c: TodayCommitment) => (
-          <div
-            key={c.id}
-            className={`bg-[#111118] border rounded-xl overflow-hidden transition-colors ${
-              c.today_logged ? "border-[#1E1E2E]" : "border-[#1E1E2E]"
-            }`}
-          >
-            {/* Header row */}
+          <div key={c.id} style={{ background: "var(--card-bg)", border: "1.5px solid var(--card-border)", overflow: "hidden" }}>
             <div className="flex items-center justify-between px-5 py-4">
               <div className="flex items-center gap-3">
-                <span className="text-xl">{c.emoji}</span>
+                <span style={{ fontSize: "1.25rem" }}>{c.emoji}</span>
                 <div>
-                  <p className="text-sm font-medium text-slate-50">{c.name}</p>
+                  <p style={{ fontFamily: "var(--font-playfair), serif", fontSize: "1rem", fontWeight: 700, color: "var(--ink)" }}>{c.name}</p>
                   {c.today_logged && c.today_minutes ? (
-                    <p className="text-xs text-green-500 mt-0.5 flex items-center gap-1">
+                    <p className="flex items-center gap-1" style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.68rem", color: "var(--green-ink)", marginTop: "0.2rem" }}>
                       <Check className="w-3 h-3" />
-                      {c.today_minutes >= 60
-                        ? `${Math.floor(c.today_minutes / 60)}h ${c.today_minutes % 60 > 0 ? `${c.today_minutes % 60}m` : ""}`
-                        : `${c.today_minutes} min`}
-                      {c.today_note && <span className="text-slate-500"> · {c.today_note}</span>}
+                      {fmtMins(c.today_minutes)}
+                      {c.today_note && <span style={{ color: "var(--ink-faint)" }}> · {c.today_note}</span>}
                     </p>
                   ) : (
-                    <p className="text-xs text-slate-600 mt-0.5">Not logged yet</p>
+                    <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.68rem", color: "var(--ink-faint)", marginTop: "0.2rem" }}>Not logged yet</p>
                   )}
                 </div>
               </div>
 
               <button
                 onClick={() => setExpanded(expanded === c.id ? null : c.id)}
-                className={`flex items-center gap-1.5 text-xs font-medium h-7 px-3 rounded-lg transition-colors ${
-                  c.today_logged
-                    ? "text-slate-500 hover:text-slate-300 border border-[#1E1E2E] hover:bg-[#16161F]"
-                    : "bg-indigo-500 hover:bg-indigo-600 text-white"
-                }`}
+                className="flex items-center gap-1.5 transition-colors"
+                style={{
+                  fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.68rem",
+                  letterSpacing: "0.05em", height: "1.9rem", padding: "0 0.75rem",
+                  background: c.today_logged ? "transparent" : "var(--ink)",
+                  color: c.today_logged ? "var(--ink-muted)" : "var(--paper)",
+                  border: c.today_logged ? "1px solid var(--card-border)" : "none",
+                  cursor: "pointer",
+                }}
               >
                 {c.today_logged ? (
-                  <>Edit {expanded === c.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}</>
+                  <>{expanded === c.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />} Edit</>
                 ) : (
-                  <>
-                    <Plus className="w-3 h-3" />
-                    Log
-                  </>
+                  <><Plus className="w-3 h-3" /> Log</>
                 )}
               </button>
             </div>
 
-            {/* Expandable log form */}
             {expanded === c.id && (
-              <div className="px-5 pb-5 border-t border-[#1E1E2E] pt-4">
-                <LogForm
-                  commitment={c}
-                  existingMinutes={c.today_minutes}
-                  onSaved={() => setExpanded(null)}
-                />
+              <div className="px-5 pb-5" style={{ borderTop: "1px solid var(--rule)", paddingTop: "1rem" }}>
+                <LogForm commitment={c} existingMinutes={c.today_minutes} onSaved={() => setExpanded(null)} />
               </div>
             )}
           </div>
         ))}
       </div>
 
-      <div className="mt-6">
-        <Link
-          href="/commitments"
-          className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-300 transition-colors"
-        >
-          <Flame className="w-4 h-4" />
-          View all commitments
+      <div style={{ marginTop: "1.5rem" }}>
+        <Link href="/commitments" style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.72rem", color: "var(--ink-faint)", textDecoration: "none", letterSpacing: "0.05em" }}>
+          View all commitments →
         </Link>
       </div>
     </div>

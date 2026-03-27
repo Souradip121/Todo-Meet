@@ -69,7 +69,7 @@ export default function SessionPage() {
   if (!room_id) {
     return (
       <div className="flex items-center justify-center py-32">
-        <div className="w-6 h-6 border-2 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[rgba(185,28,28,0.2)] border-t-indigo-500 rounded-full animate-spin" />
       </div>
     )
   }
@@ -79,15 +79,15 @@ export default function SessionPage() {
       {/* Back */}
       <button
         onClick={() => router.back()}
-        className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-50 mb-8 transition-colors"
+        className="flex items-center gap-2 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)] mb-8 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Back
       </button>
 
       {/* Presence */}
-      <div className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-6 mb-4">
-        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-4">
+      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6 mb-4">
+        <p className="text-xs font-medium text-[var(--ink-muted)] uppercase tracking-wider mb-4">
           In this session
         </p>
         <PresenceRow members={members} />
@@ -95,15 +95,15 @@ export default function SessionPage() {
 
       {/* Timer */}
       {phase !== "ended" && (
-        <div className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-8 mb-4 flex flex-col items-center gap-6">
-          <div className="text-5xl font-semibold font-mono text-slate-50">
+        <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-8 mb-4 flex flex-col items-center gap-6">
+          <div className="text-5xl font-semibold font-mono text-[var(--ink)]">
             {formatTime(timer.remaining_sec)}
           </div>
 
           {phase === "waiting" && is_host && (
             <button
               onClick={handleStart}
-              className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white font-medium h-10 px-6 rounded-lg transition-colors"
+              className="flex items-center gap-2 bg-[var(--ink)] hover:bg-[var(--red-ink)] text-white font-medium h-10 px-6 rounded-lg transition-colors"
             >
               <Play className="w-4 h-4" />
               Start session
@@ -111,13 +111,13 @@ export default function SessionPage() {
           )}
 
           {phase === "waiting" && !is_host && (
-            <p className="text-sm text-slate-400">Waiting for host to start…</p>
+            <p className="text-sm text-[var(--ink-muted)]">Waiting for host to start…</p>
           )}
 
           {phase === "running" && is_host && (
             <button
               onClick={handleEnd}
-              className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 h-10 px-6 rounded-lg transition-colors"
+              className="flex items-center gap-2 bg-[rgba(185,28,28,0.06)] hover:bg-[rgba(185,28,28,0.1)] text-[var(--red-ink)] border border-[rgba(185,28,28,0.2)] h-10 px-6 rounded-lg transition-colors"
             >
               <Square className="w-4 h-4" />
               End session
@@ -125,14 +125,14 @@ export default function SessionPage() {
           )}
 
           {phase === "running" && !is_host && (
-            <p className="text-sm text-green-500">Session running</p>
+            <p className="text-sm text-[var(--green-ink)]">Session running</p>
           )}
         </div>
       )}
 
       {/* End cards */}
       {phase === "ended" && (
-        <div className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-6">
+        <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6">
           <SessionEndCards
             members={members}
             currentUserId={currentUserId}

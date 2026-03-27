@@ -1,11 +1,8 @@
-// App shell — wraps all (app) routes
-// Top nav + page content
-
 import { TopNav } from "./top-nav"
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[#0A0A0F]">
+    <div className="min-h-screen" style={{ background: "var(--paper)" }}>
       <TopNav />
       <main className="max-w-7xl mx-auto px-6 py-8">
         {children}
@@ -13,4 +10,3 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </div>
   )
 }
-

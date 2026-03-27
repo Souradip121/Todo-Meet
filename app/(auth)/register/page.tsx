@@ -5,6 +5,17 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { signUp } from "@/lib/auth-client"
 
+const inputStyle: React.CSSProperties = {
+  width: "100%", background: "var(--paper)", border: "1.5px solid var(--card-border)",
+  color: "var(--ink)", fontFamily: "var(--font-lora), serif", fontSize: "0.9rem",
+  height: "2.6rem", padding: "0 0.75rem", outline: "none",
+}
+const labelStyle: React.CSSProperties = {
+  fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem",
+  letterSpacing: "0.18em", textTransform: "uppercase", color: "var(--ink-faint)",
+  display: "block", marginBottom: "0.4rem",
+}
+
 export default function RegisterPage() {
   const router = useRouter()
   const [displayName, setDisplayName] = useState("")
@@ -17,14 +28,11 @@ export default function RegisterPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-    if (displayName.length > 50) {
-      setError("Display name must be 50 characters or less")
-      return
-    }
+    if (displayName.length > 50) { setError("Display name must be 50 characters or less"); return }
     setLoading(true)
     try {
       await signUp.email({ email, password, name: displayName, username })
-      router.push("/declare")
+      router.push("/onboarding")
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registration failed")
     } finally {
@@ -32,94 +40,60 @@ export default function RegisterPage() {
     }
   }
 
+  const fields = [
+    { label: "Display Name", type: "text", value: displayName, set: setDisplayName, placeholder: "Alex Chen", maxLength: 50 },
+    { label: "Username", type: "text", value: username, set: (v: string) => setUsername(v.toLowerCase().replace(/[^a-z0-9_]/g, "")), placeholder: "alexchen" },
+    { label: "Email", type: "email", value: email, set: setEmail, placeholder: "you@example.com" },
+    { label: "Password", type: "password", value: password, set: setPassword, placeholder: "Min. 8 characters", minLength: 8 },
+  ]
+
   return (
-    <div className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-8">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-slate-50">showup.day</h1>
-        <p className="text-sm text-slate-400 mt-1">Create your account — takes 60 seconds</p>
+    <div style={{ background: "var(--card-bg)", border: "1.5px solid var(--card-border)", padding: "2.5rem" }}>
+      <div style={{ marginBottom: "2rem" }}>
+        <h1 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "1.75rem", fontWeight: 900, color: "var(--ink)", letterSpacing: "-0.02em", marginBottom: "0.3rem" }}>
+          show<span style={{ color: "var(--red-ink)" }}>up</span>.day
+        </h1>
+        <p style={{ fontFamily: "var(--font-lora), serif", fontSize: "0.9rem", color: "var(--ink-muted)" }}>
+          Create your account — takes 60 seconds
+        </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider block mb-2">
-            Display Name
-          </label>
-          <input
-            type="text"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            required
-            maxLength={50}
-            className="w-full bg-[#0A0A0F] border border-[#1E1E2E] text-slate-50 placeholder:text-slate-600 focus:border-indigo-500/50 focus:outline-none rounded-lg h-10 px-3 text-sm"
-            placeholder="Alex Chen"
-          />
-        </div>
-
-        <div>
-          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider block mb-2">
-            Username
-          </label>
-          <input
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ""))}
-            required
-            className="w-full bg-[#0A0A0F] border border-[#1E1E2E] text-slate-50 placeholder:text-slate-600 focus:border-indigo-500/50 focus:outline-none rounded-lg h-10 px-3 text-sm"
-            placeholder="alexchen"
-          />
-        </div>
-
-        <div>
-          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider block mb-2">
-            Email
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full bg-[#0A0A0F] border border-[#1E1E2E] text-slate-50 placeholder:text-slate-600 focus:border-indigo-500/50 focus:outline-none rounded-lg h-10 px-3 text-sm"
-            placeholder="you@example.com"
-          />
-        </div>
-
-        <div>
-          <label className="text-xs font-medium text-slate-400 uppercase tracking-wider block mb-2">
-            Password
-          </label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-            className="w-full bg-[#0A0A0F] border border-[#1E1E2E] text-slate-50 placeholder:text-slate-600 focus:border-indigo-500/50 focus:outline-none rounded-lg h-10 px-3 text-sm"
-            placeholder="Min. 8 characters"
-          />
-        </div>
+      <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+        {fields.map((f) => (
+          <div key={f.label}>
+            <label style={labelStyle}>{f.label}</label>
+            <input
+              type={f.type} value={f.value}
+              onChange={(e) => f.set(e.target.value)}
+              required placeholder={f.placeholder}
+              maxLength={(f as { maxLength?: number }).maxLength}
+              minLength={(f as { minLength?: number }).minLength}
+              style={inputStyle}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "var(--red-ink)" }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "var(--card-border)" }}
+            />
+          </div>
+        ))}
 
         {error && (
-          <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
+          <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.75rem", color: "var(--red-ink)", background: "rgba(185,28,28,0.06)", border: "1px solid rgba(185,28,28,0.2)", padding: "0.5rem 0.75rem" }}>
             {error}
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium h-10 rounded-lg transition-colors text-sm"
-        >
-          {loading ? "Creating account…" : "Create account"}
+        <button type="submit" disabled={loading} style={{
+          background: loading ? "var(--ink-muted)" : "var(--ink)", color: "var(--paper)",
+          border: "none", height: "2.6rem", fontFamily: "var(--font-ibm-mono), monospace",
+          fontSize: "0.82rem", letterSpacing: "0.05em", cursor: loading ? "not-allowed" : "pointer", marginTop: "0.25rem",
+        }}>
+          {loading ? "Creating account…" : "Create account →"}
         </button>
       </form>
 
-      <div className="h-px bg-[#1E1E2E] my-6" />
-
-      <p className="text-sm text-slate-400 text-center">
+      <div style={{ height: "1px", background: "var(--rule)", margin: "1.5rem 0" }} />
+      <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.72rem", color: "var(--ink-faint)", textAlign: "center" }}>
         Already have an account?{" "}
-        <Link href="/login" className="text-indigo-400 hover:text-indigo-300 transition-colors">
-          Sign in
-        </Link>
+        <Link href="/login" style={{ color: "var(--red-ink)", textDecoration: "none" }}>Sign in</Link>
       </p>
     </div>
   )

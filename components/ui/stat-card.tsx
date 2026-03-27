@@ -12,20 +12,25 @@ interface StatCardProps {
 
 export function StatCard({ label, value, suffix, trend, trendUp, mono }: StatCardProps) {
   return (
-    <div className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-6">
-      <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">
+    <div style={{ background: "var(--card-bg)", border: "1.5px solid var(--card-border)", padding: "1.5rem" }}>
+      <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", letterSpacing: "0.18em", textTransform: "uppercase" as const, color: "var(--ink-faint)", marginBottom: "0.75rem" }}>
         {label}
       </p>
       <div className="flex items-baseline gap-1.5">
-        <span className={`text-4xl font-semibold text-slate-50 ${mono ? "font-mono" : ""}`}>
+        <span style={{
+          fontFamily: mono ? "var(--font-ibm-mono), monospace" : "var(--font-playfair), serif",
+          fontSize: "2.5rem", fontWeight: 900, letterSpacing: "-0.02em", lineHeight: 1, color: "var(--ink)",
+        }}>
           {value}
         </span>
         {suffix && (
-          <span className="text-sm text-slate-400">{suffix}</span>
+          <span style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.72rem", color: "var(--ink-faint)", letterSpacing: "0.05em" }}>
+            {suffix}
+          </span>
         )}
       </div>
       {trend && (
-        <p className={`text-xs mt-2 ${trendUp ? "text-green-500" : "text-slate-500"}`}>
+        <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.68rem", marginTop: "0.4rem", color: trendUp ? "var(--green-ink)" : "var(--ink-faint)" }}>
           {trendUp ? "↑" : "↓"} {trend}
         </p>
       )}

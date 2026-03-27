@@ -50,7 +50,7 @@ export default function GroupDetailPage() {
     return (
       <div className="max-w-2xl mx-auto space-y-4">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-6 animate-pulse h-24" />
+          <div key={i} className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6 animate-pulse h-24" />
         ))}
       </div>
     )
@@ -59,7 +59,7 @@ export default function GroupDetailPage() {
   if (error || !data) {
     return (
       <div className="max-w-2xl mx-auto">
-        <p className="text-sm text-red-400">Group not found.</p>
+        <p className="text-sm text-[var(--red-ink)]">Group not found.</p>
       </div>
     )
   }
@@ -72,7 +72,7 @@ export default function GroupDetailPage() {
       {/* Back */}
       <button
         onClick={() => router.push("/groups")}
-        className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-50 mb-6 transition-colors"
+        className="flex items-center gap-2 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)] mb-6 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Groups
@@ -81,37 +81,37 @@ export default function GroupDetailPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-50">{group.title}</h1>
+          <h1 className="text-2xl font-semibold text-[var(--ink)]">{group.title}</h1>
           {group.description && (
-            <p className="text-sm text-slate-400 mt-1">{group.description}</p>
+            <p className="text-sm text-[var(--ink-muted)] mt-1">{group.description}</p>
           )}
         </div>
         {my_role === "host" && (
-          <span className="px-2 py-0.5 rounded-full text-xs bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shrink-0">
+          <span className="px-2 py-0.5 rounded-full text-xs bg-[rgba(185,28,28,0.06)] text-[var(--red-ink)] border border-[rgba(185,28,28,0.2)] shrink-0">
             Host
           </span>
         )}
       </div>
 
       {/* Invite code */}
-      <div className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-6 mb-4">
-        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-3">Invite Code</p>
+      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6 mb-4">
+        <p className="text-xs font-medium text-[var(--ink-muted)] uppercase tracking-wider mb-3">Invite Code</p>
         <div className="flex items-center gap-3">
-          <span className="font-mono text-lg text-slate-50 tracking-widest">{group.invite_code}</span>
+          <span className="font-mono text-lg text-[var(--ink)] tracking-widest">{group.invite_code}</span>
           <button
             onClick={copyInviteCode}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-slate-50 border border-[#1E1E2E] hover:bg-[#16161F] px-2.5 py-1.5 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] border border-[var(--card-border)] hover:bg-[var(--paper-hover)] px-2.5 py-1.5 rounded-lg transition-colors"
           >
-            {copied ? <Check className="w-3 h-3 text-green-500" /> : <Copy className="w-3 h-3" />}
+            {copied ? <Check className="w-3 h-3 text-[var(--green-ink)]" /> : <Copy className="w-3 h-3" />}
             {copied ? "Copied" : "Copy"}
           </button>
         </div>
-        <p className="text-xs text-slate-600 mt-2">Share this code with people you want to invite</p>
+        <p className="text-xs text-[var(--ink-faint)] mt-2">Share this code with people you want to invite</p>
       </div>
 
       {/* Members */}
-      <div className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-6 mb-4">
-        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-4">
+      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6 mb-4">
+        <p className="text-xs font-medium text-[var(--ink-muted)] uppercase tracking-wider mb-4">
           Members · {members.length}
         </p>
         <div className="space-y-4">
@@ -131,13 +131,13 @@ export default function GroupDetailPage() {
       </div>
 
       {/* Sessions */}
-      <div className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-6 mb-4">
+      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6 mb-4">
         <div className="flex items-center justify-between mb-4">
-          <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">Sessions</p>
+          <p className="text-xs font-medium text-[var(--ink-muted)] uppercase tracking-wider">Sessions</p>
           {!showSessionForm && (
             <button
               onClick={() => setShowSessionForm(true)}
-              className="flex items-center gap-1.5 text-xs bg-indigo-500 hover:bg-indigo-600 text-white font-medium h-7 px-3 rounded-lg transition-colors"
+              className="flex items-center gap-1.5 text-xs bg-[var(--ink)] hover:bg-[var(--red-ink)] text-white font-medium h-7 px-3 rounded-lg transition-colors"
             >
               <Play className="w-3 h-3" />
               Start session
@@ -159,16 +159,16 @@ export default function GroupDetailPage() {
                 if (e.key === "Escape") setShowSessionForm(false)
               }}
               placeholder="What are you working on?"
-              className="flex-1 bg-[#0A0A0F] border border-[#1E1E2E] text-slate-50 placeholder:text-slate-600 focus:border-indigo-500/50 focus:outline-none rounded-lg h-9 px-3 text-sm"
+              className="flex-1 bg-[var(--paper)] border border-[var(--card-border)] text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:border-[rgba(185,28,28,0.5)] focus:outline-none rounded-lg h-9 px-3 text-sm"
             />
             <button
               onClick={() => sessionTitle.trim() && createSession.mutate({ group_id: id, title: sessionTitle.trim() })}
               disabled={!sessionTitle.trim() || createSession.isPending}
-              className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white text-sm font-medium h-9 px-4 rounded-lg transition-colors"
+              className="bg-[var(--ink)] hover:bg-[var(--red-ink)] disabled:opacity-50 text-white text-sm font-medium h-9 px-4 rounded-lg transition-colors"
             >
               {createSession.isPending ? "…" : "Go"}
             </button>
-            <button onClick={() => setShowSessionForm(false)} className="text-slate-600 hover:text-slate-400 h-9 px-2">
+            <button onClick={() => setShowSessionForm(false)} className="text-[var(--ink-faint)] hover:text-[var(--ink-muted)] h-9 px-2">
               ✕
             </button>
           </div>
@@ -180,25 +180,25 @@ export default function GroupDetailPage() {
               <a
                 key={sess.id}
                 href={`/sessions/${sess.id}`}
-                className="flex items-center justify-between py-2 hover:bg-[#16161F] rounded-lg px-2 -mx-2 transition-colors"
+                className="flex items-center justify-between py-2 hover:bg-[var(--paper-hover)] rounded-lg px-2 -mx-2 transition-colors"
               >
                 <div className="flex items-center gap-2">
                   {sess.status === "running" && (
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--ink)]" />
                     </span>
                   )}
-                  <span className="text-sm text-slate-300">{sess.title}</span>
+                  <span className="text-sm text-[var(--ink)]">{sess.title}</span>
                 </div>
-                <span className={`text-xs ${sess.status === "running" ? "text-indigo-400 font-medium" : "text-slate-600"}`}>
+                <span className={`text-xs ${sess.status === "running" ? "text-[var(--red-ink)] font-medium" : "text-[var(--ink-faint)]"}`}>
                   {sess.status === "running" ? "Live — Join →" : sess.status}
                 </span>
               </a>
             ))}
           </div>
         ) : (
-          <div className="flex items-center gap-2 text-slate-600">
+          <div className="flex items-center gap-2 text-[var(--ink-faint)]">
             <Users className="w-4 h-4" />
             <p className="text-sm">No sessions yet. Start one to work together.</p>
           </div>
@@ -211,7 +211,7 @@ export default function GroupDetailPage() {
           <button
             onClick={handleArchive}
             disabled={archiveGroup.isPending}
-            className="text-sm bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 disabled:opacity-50 h-9 px-4 rounded-lg transition-colors"
+            className="text-sm bg-[rgba(185,28,28,0.06)] hover:bg-[rgba(185,28,28,0.1)] text-[var(--red-ink)] border border-[rgba(185,28,28,0.2)] disabled:opacity-50 h-9 px-4 rounded-lg transition-colors"
           >
             Archive group
           </button>
@@ -219,7 +219,7 @@ export default function GroupDetailPage() {
           <button
             onClick={handleLeave}
             disabled={leaveGroup.isPending}
-            className="text-sm text-slate-400 hover:text-slate-50 hover:bg-[#16161F] border border-[#1E1E2E] disabled:opacity-50 h-9 px-4 rounded-lg transition-colors"
+            className="text-sm text-[var(--ink-muted)] hover:text-[var(--ink)] hover:bg-[var(--paper-hover)] border border-[var(--card-border)] disabled:opacity-50 h-9 px-4 rounded-lg transition-colors"
           >
             Leave group
           </button>

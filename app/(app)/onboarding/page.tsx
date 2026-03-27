@@ -40,12 +40,7 @@ export default function OnboardingPage() {
     if (!name.trim()) return
     createCommitment.mutate(
       { name: name.trim(), emoji, period_days: periodDays },
-      {
-        onSuccess: (res) => {
-          setCreatedId(res.id)
-          setStep("logging")
-        },
-      }
+      { onSuccess: (res) => { setCreatedId(res.id); setStep("logging") } }
     )
   }
 
@@ -53,41 +48,41 @@ export default function OnboardingPage() {
     if (!createdId) return
     const mins = parseInt(minutes)
     if (mins > 0) {
-      logTime.mutate(
-        { duration_minutes: mins },
-        { onSuccess: () => router.replace("/commitments/today") }
-      )
+      logTime.mutate({ duration_minutes: mins }, { onSuccess: () => router.replace("/commitments/today") })
     } else {
       router.replace("/commitments/today")
     }
+  }
+
+  const inputStyle: React.CSSProperties = {
+    background: "var(--paper)", border: "1.5px solid var(--card-border)", color: "var(--ink)",
+    fontFamily: "var(--font-lora), serif", fontSize: "0.9rem", outline: "none",
+    height: "2.6rem", padding: "0 0.75rem", width: "100%",
   }
 
   if (step === "logging") {
     return (
       <div className="max-w-sm mx-auto flex flex-col items-center justify-center min-h-[60vh] gap-6">
         <div className="text-center">
-          <span className="text-5xl">{emoji}</span>
-          <h2 className="text-xl font-semibold text-slate-50 mt-3">{name}</h2>
-          <p className="text-sm text-slate-400 mt-1">Did you do it today? Log your first session.</p>
+          <span style={{ fontSize: "3rem" }}>{emoji}</span>
+          <h2 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "1.5rem", fontWeight: 700, color: "var(--ink)", marginTop: "0.75rem" }}>{name}</h2>
+          <p style={{ fontFamily: "var(--font-lora), serif", fontSize: "0.9rem", color: "var(--ink-muted)", marginTop: "0.4rem" }}>Did you do it today? Log your first session.</p>
         </div>
         <div className="w-full space-y-3">
           <div className="flex items-center gap-2">
-            <input
-              type="number"
-              value={minutes}
-              onChange={(e) => setMinutes(e.target.value)}
-              autoFocus
-              min={1}
-              placeholder="Minutes (e.g. 45)"
-              className="flex-1 bg-[#0A0A0F] border border-[#1E1E2E] text-slate-50 placeholder:text-slate-600 focus:border-indigo-500/50 focus:outline-none rounded-lg h-11 px-4 text-sm"
+            <input type="number" value={minutes} onChange={(e) => setMinutes(e.target.value)}
+              autoFocus min={1} placeholder="Minutes (e.g. 45)"
+              style={{ ...inputStyle, flex: 1, width: "auto" }}
+              onFocus={(e) => { e.currentTarget.style.borderColor = "var(--red-ink)" }}
+              onBlur={(e) => { e.currentTarget.style.borderColor = "var(--card-border)" }}
             />
-            <span className="text-sm text-slate-500">min</span>
+            <span style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.72rem", color: "var(--ink-faint)" }}>min</span>
           </div>
-          <button
-            onClick={handleLogAndGo}
-            disabled={logTime.isPending}
-            className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white font-medium h-11 rounded-lg transition-colors"
-          >
+          <button onClick={handleLogAndGo} disabled={logTime.isPending} style={{
+            width: "100%", background: "var(--ink)", color: "var(--paper)", border: "none",
+            height: "2.8rem", fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.85rem",
+            letterSpacing: "0.05em", cursor: logTime.isPending ? "not-allowed" : "pointer",
+          }}>
             {logTime.isPending ? "Saving…" : minutes ? "Log & start →" : "Skip for now →"}
           </button>
         </div>
@@ -98,76 +93,73 @@ export default function OnboardingPage() {
   return (
     <div className="max-w-sm mx-auto flex flex-col items-center justify-center min-h-[60vh] gap-8">
       <div className="text-center">
-        <h1 className="text-2xl font-semibold text-slate-50">Welcome to showup.day</h1>
-        <p className="text-sm text-slate-400 mt-2">Pick one thing you want to stay consistent with.</p>
+        <h1 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "2rem", fontWeight: 900, color: "var(--ink)", letterSpacing: "-0.02em" }}>
+          Welcome to show<span style={{ color: "var(--red-ink)" }}>up</span>.day
+        </h1>
+        <p style={{ fontFamily: "var(--font-lora), serif", fontSize: "0.95rem", color: "var(--ink-muted)", marginTop: "0.5rem" }}>
+          Pick one thing you want to stay consistent with.
+        </p>
       </div>
 
-      {/* Presets */}
       <div className="w-full grid grid-cols-2 gap-2">
         {PRESETS.map((p) => (
-          <button
-            key={p.emoji}
-            onClick={() => handlePreset(p)}
-            className={`flex items-center gap-2 px-3 py-2.5 rounded-lg border text-left transition-colors ${
-              name === p.name && emoji === p.emoji
-                ? "bg-indigo-500/10 border-indigo-500/40 text-slate-50"
-                : "bg-[#111118] border-[#1E1E2E] text-slate-300 hover:border-[#2a2a3e]"
-            }`}
-          >
-            <span className="text-lg">{p.emoji}</span>
-            <span className="text-sm">{p.name}</span>
+          <button key={p.emoji} onClick={() => handlePreset(p)}
+            className="flex items-center gap-2 px-3 py-2.5 text-left transition-colors"
+            style={{
+              background: name === p.name && emoji === p.emoji ? "rgba(185,28,28,0.06)" : "var(--card-bg)",
+              border: name === p.name && emoji === p.emoji ? "1.5px solid rgba(185,28,28,0.4)" : "1.5px solid var(--card-border)",
+              cursor: "pointer",
+            }}>
+            <span style={{ fontSize: "1.2rem" }}>{p.emoji}</span>
+            <span style={{ fontFamily: "var(--font-lora), serif", fontSize: "0.85rem", color: "var(--ink)" }}>{p.name}</span>
           </button>
         ))}
       </div>
 
-      {/* Custom name */}
       <div className="w-full space-y-2">
-        <p className="text-xs text-slate-500">Or type your own:</p>
+        <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", letterSpacing: "0.1em", color: "var(--ink-faint)" }}>Or type your own:</p>
         <div className="flex gap-2">
-          <input
-            type="text"
-            value={PRESETS.some((p) => p.emoji === emoji) ? "" : emoji}
+          <input type="text" value={PRESETS.some((p) => p.emoji === emoji) ? "" : emoji}
             onChange={(e) => setEmoji(e.target.value.slice(-2) || "⚡")}
-            placeholder="emoji"
-            maxLength={2}
-            className="w-14 bg-[#0A0A0F] border border-[#1E1E2E] text-slate-50 placeholder:text-slate-600 focus:border-indigo-500/50 focus:outline-none rounded-lg h-10 px-2 text-sm text-center"
+            placeholder="emoji" maxLength={2}
+            style={{ ...inputStyle, width: "3rem", textAlign: "center", padding: 0, flex: "none" }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = "var(--red-ink)" }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = "var(--card-border)" }}
           />
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="What are you committing to?"
-            maxLength={80}
-            className="flex-1 bg-[#0A0A0F] border border-[#1E1E2E] text-slate-50 placeholder:text-slate-600 focus:border-indigo-500/50 focus:outline-none rounded-lg h-10 px-3 text-sm"
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)}
+            placeholder="What are you committing to?" maxLength={80}
+            style={{ ...inputStyle, flex: 1, width: "auto" }}
+            onFocus={(e) => { e.currentTarget.style.borderColor = "var(--red-ink)" }}
+            onBlur={(e) => { e.currentTarget.style.borderColor = "var(--card-border)" }}
           />
         </div>
       </div>
 
-      {/* Period */}
       <div className="w-full">
-        <p className="text-xs text-slate-500 mb-2">For how long?</p>
+        <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", letterSpacing: "0.1em", color: "var(--ink-faint)", marginBottom: "0.5rem" }}>For how long?</p>
         <div className="flex gap-2 flex-wrap">
           {PERIODS.map((p) => (
-            <button
-              key={p.value}
-              onClick={() => setPeriodDays(p.value)}
-              className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-                periodDays === p.value
-                  ? "bg-indigo-500/20 text-indigo-400 border-indigo-500/40"
-                  : "bg-[#0A0A0F] text-slate-400 border-[#1E1E2E] hover:text-slate-200"
-              }`}
-            >
+            <button key={p.value} onClick={() => setPeriodDays(p.value)}
+              style={{
+                fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.72rem", letterSpacing: "0.05em",
+                padding: "0.3rem 0.75rem", cursor: "pointer",
+                background: periodDays === p.value ? "var(--ink)" : "var(--card-bg)",
+                color: periodDays === p.value ? "var(--paper)" : "var(--ink-muted)",
+                border: periodDays === p.value ? "1.5px solid var(--ink)" : "1.5px solid var(--card-border)",
+              }}>
               {p.label}
             </button>
           ))}
         </div>
       </div>
 
-      <button
-        onClick={handleStart}
-        disabled={!name.trim() || createCommitment.isPending}
-        className="w-full bg-indigo-500 hover:bg-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-medium h-11 rounded-lg transition-colors text-base"
-      >
+      <button onClick={handleStart} disabled={!name.trim() || createCommitment.isPending}
+        style={{
+          width: "100%", background: "var(--ink)", color: "var(--paper)", border: "none",
+          height: "2.8rem", fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.9rem",
+          letterSpacing: "0.05em", cursor: !name.trim() || createCommitment.isPending ? "not-allowed" : "pointer",
+          opacity: !name.trim() || createCommitment.isPending ? 0.5 : 1,
+        }}>
         {createCommitment.isPending ? "Starting…" : "Start →"}
       </button>
     </div>

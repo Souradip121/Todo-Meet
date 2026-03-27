@@ -32,7 +32,7 @@ export function WeeklyChart({ data, color = "indigo" }: WeeklyChartProps) {
   if (!data || data.length === 0) {
     return (
       <div className="h-32 flex items-center justify-center">
-        <p className="text-xs text-slate-600">No data yet</p>
+        <p className="text-xs text-[var(--ink-faint)]">No data yet</p>
       </div>
     )
   }
@@ -43,28 +43,28 @@ export function WeeklyChart({ data, color = "indigo" }: WeeklyChartProps) {
         <XAxis
           dataKey="week"
           tickFormatter={formatWeek}
-          tick={{ fill: "#475569", fontSize: 10 }}
+          tick={{ fill: "var(--ink-faint)", fontSize: 10 }}
           axisLine={false}
           tickLine={false}
         />
         <YAxis
           tickFormatter={(v) => `${Math.round(v / 60)}h`}
-          tick={{ fill: "#475569", fontSize: 10 }}
+          tick={{ fill: "var(--ink-faint)", fontSize: 10 }}
           axisLine={false}
           tickLine={false}
           width={28}
         />
         <Tooltip
           contentStyle={{
-            background: "#111118",
+            background: "var(--card-bg)",
             border: "1px solid #1E1E2E",
             borderRadius: "8px",
             fontSize: 12,
-            color: "#CBD5E1",
+            color: "var(--ink-muted)",
           }}
           formatter={(value) => [formatMinutes(Number(value)), "Time"]}
           labelFormatter={(label) => `Week of ${formatWeek(label)}`}
-          cursor={{ fill: "#1E1E2E" }}
+          cursor={{ fill: "var(--card-border)" }}
         />
         <Bar dataKey="total_minutes" radius={[3, 3, 0, 0]}>
           {data.map((_, i) => (

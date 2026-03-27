@@ -23,7 +23,7 @@ export function PeriodProgress({ commitment, daysLogged }: PeriodProgressProps) 
 
   const colorClass =
     commitment.color === "indigo"
-      ? "bg-indigo-500"
+      ? "bg-[var(--ink)]"
       : commitment.color === "amber"
         ? "bg-amber-400"
         : "bg-green-500"
@@ -31,14 +31,14 @@ export function PeriodProgress({ commitment, daysLogged }: PeriodProgressProps) 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider">This Period</p>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs font-medium text-[var(--ink-muted)] uppercase tracking-wider">This Period</p>
+        <p className="text-xs text-[var(--ink-faint)]">
           {daysLogged}/{commitment.period_days} days
         </p>
       </div>
 
       {/* Progress bar */}
-      <div className="h-1.5 bg-[#1E1E2E] rounded-full overflow-hidden">
+      <div className="h-1.5 bg-[var(--rule)] rounded-full overflow-hidden">
         <div
           className={`h-full rounded-full transition-all ${colorClass}`}
           style={{ width: `${pct}%` }}
@@ -49,31 +49,31 @@ export function PeriodProgress({ commitment, daysLogged }: PeriodProgressProps) 
       {remaining <= 7 && (
         <div className={`rounded-xl p-4 border ${
           remaining <= 0
-            ? "bg-amber-400/5 border-amber-400/20"
-            : "bg-[#111118] border-[#1E1E2E]"
+            ? "bg-amber-400/5 border-[rgba(146,64,14,0.2)]"
+            : "bg-[var(--card-bg)] border-[var(--card-border)]"
         }`}>
           {remaining <= 0 ? (
             <>
-              <p className="text-sm font-medium text-amber-400 mb-3">Your {commitment.period_days}-day commitment ended. Keep going?</p>
+              <p className="text-sm font-medium text-[var(--amber-ink)] mb-3">Your {commitment.period_days}-day commitment ended. Keep going?</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => renew.mutate()}
                   disabled={renew.isPending}
-                  className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white text-sm font-medium h-9 px-4 rounded-lg transition-colors"
+                  className="bg-[var(--ink)] hover:bg-[var(--red-ink)] disabled:opacity-50 text-white text-sm font-medium h-9 px-4 rounded-lg transition-colors"
                 >
                   {renew.isPending ? "Renewing…" : `Renew ${commitment.period_days} days →`}
                 </button>
                 <button
                   onClick={() => archive.mutate(commitment.id)}
                   disabled={archive.isPending}
-                  className="text-slate-400 hover:text-slate-200 border border-[#1E1E2E] hover:bg-[#16161F] text-sm h-9 px-4 rounded-lg transition-colors"
+                  className="text-[var(--ink-muted)] hover:text-[var(--ink)] border border-[var(--card-border)] hover:bg-[var(--paper-hover)] text-sm h-9 px-4 rounded-lg transition-colors"
                 >
                   Archive
                 </button>
               </div>
             </>
           ) : (
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-[var(--ink-faint)]">
               Period ends in {remaining} day{remaining !== 1 ? "s" : ""} — renewal coming up
             </p>
           )}
