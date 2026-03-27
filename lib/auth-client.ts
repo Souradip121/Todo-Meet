@@ -96,6 +96,25 @@ export async function signOut() {
   clearTokens()
 }
 
+// ─── updateProfile ───────────────────────────────────────────────────────────
+
+export async function updateProfile(body: { current_focus?: string | null; display_name?: string; timezone?: string }) {
+  const token = getAccessToken()
+  if (!token) throw new Error("Not authenticated")
+  const res = await fetch(`${BASE}/auth/profile`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error("Failed to update profile")
+  // Refresh cached user
+  const me = await fetch(`${BASE}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+  if (me.ok) {
+    const user = await me.json()
+    localStorage.setItem("showup_user", JSON.stringify(user))
+  }
+}
+
 // ─── useSession ──────────────────────────────────────────────────────────────
 // Minimal hook — reads from localStorage, no server round-trip.
 
@@ -107,6 +126,8 @@ interface SessionUser {
   username: string
   display_name: string
   name: string // alias for display_name, used by components
+  current_focus?: string | null
+  streak_freezes_remaining?: number
 }
 
 interface Session {

@@ -24,7 +24,7 @@ async function request<T>(
   })
   if (!res.ok) {
     const error = await res.json().catch(() => ({ message: "Request failed" }))
-    throw new Error(error.message || `HTTP ${res.status}`)
+    throw new Error(error.error || error.message || `HTTP ${res.status}`)
   }
   return res.json()
 }

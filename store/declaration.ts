@@ -56,7 +56,10 @@ export const useDeclarationStore = create<DeclarationState>()(
         reset: () => set({ commitments: [emptyCommitment()] }),
       },
     }),
-    { name: "showup-declaration-draft" }
+    {
+      name: "showup-declaration-draft",
+      partialize: (state) => ({ commitments: state.commitments }),
+    }
   )
 )
 

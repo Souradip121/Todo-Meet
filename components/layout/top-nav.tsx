@@ -2,15 +2,16 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Flame, LayoutDashboard, CheckSquare, Timer, BookOpen, LogOut } from "lucide-react"
+import { Flame, LayoutDashboard, CalendarCheck, ListChecks, Timer, Users, LogOut } from "lucide-react"
 import { useStreaks } from "@/hooks/use-streaks"
 import { useSession, signOut } from "@/lib/auth-client"
 
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/commitments", label: "Today", icon: CheckSquare },
+  { href: "/commitments/today", label: "Today", icon: CalendarCheck },
+  { href: "/commitments", label: "Commitments", icon: ListChecks },
   { href: "/focus", label: "Focus", icon: Timer },
-  { href: "/debrief", label: "Debrief", icon: BookOpen },
+  { href: "/groups", label: "Groups", icon: Users },
 ]
 
 export function TopNav() {

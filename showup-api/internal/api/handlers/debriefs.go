@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Souradip121/showup-api/internal/api/middleware"
+	"github.com/Souradip121/showup-api/internal/jobs"
 	"github.com/Souradip121/showup-api/internal/models"
 )
 
@@ -76,6 +78,8 @@ func (h *DebriefHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	d.Date = debriefDateRaw.Format("2006-01-02")
 
+	go jobs.UpsertTodayScore(context.Background(), h.db, userID)
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(d)
@@ -117,8 +121,9 @@ func (h *DebriefHandler) ByDate(w http.ResponseWriter, r *http.Request) {
 func (h *DebriefHandler) Streak(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.UserIDFrom(r.Context())
 
+	// Streak is now based on commitment_logs (not debriefs)
 	rows, err := h.db.Query(r.Context(),
-		`SELECT date FROM eod_debriefs WHERE user_id=$1 ORDER BY date DESC LIMIT 400`,
+		`SELECT DISTINCT date FROM commitment_logs WHERE user_id=$1 ORDER BY date DESC LIMIT 400`,
 		userID,
 	)
 	if err != nil {
@@ -135,41 +140,113 @@ func (h *DebriefHandler) Streak(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	streak := calcStreak(dates)
+	// Also load freeze dates so frozen days don't break the streak
+	fRows, _ := h.db.Query(r.Context(),
+		`SELECT date FROM streak_freeze_uses WHERE user_id=$1 ORDER BY date DESC LIMIT 400`,
+		userID,
+	)
+	var freezeDates []time.Time
+	if fRows != nil {
+		defer fRows.Close()
+		for fRows.Next() {
+			var d time.Time
+			if err := fRows.Scan(&d); err == nil {
+				freezeDates = append(freezeDates, d)
+			}
+		}
+	}
+
+	// Also return freeze balance from users table
+	var freezesRemaining int16
+	h.db.QueryRow(r.Context(),
+		`SELECT streak_freezes_remaining FROM users WHERE id=$1`, userID,
+	).Scan(&freezesRemaining)
+
+	streak := calcStreak(dates, freezeDates)
+	streak.FreezesRemaining = int(freezesRemaining)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(streak)
 }
 
-// calcStreak computes streak counts from a desc-ordered list of debrief dates.
-func calcStreak(dates []time.Time) models.StreakData {
-	if len(dates) == 0 {
+// FreezeStreak uses one of the user's streak freezes for today.
+// POST /api/v1/streaks/freeze
+func (h *DebriefHandler) FreezeStreak(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserIDFrom(r.Context())
+
+	var freezes int16
+	if err := h.db.QueryRow(r.Context(),
+		`SELECT streak_freezes_remaining FROM users WHERE id=$1`, userID,
+	).Scan(&freezes); err != nil || freezes <= 0 {
+		jsonError(w, "no streak freezes remaining", http.StatusConflict)
+		return
+	}
+
+	var tz string
+	h.db.QueryRow(r.Context(), `SELECT timezone FROM users WHERE id=$1`, userID).Scan(&tz)
+	loc, _ := time.LoadLocation(tz)
+	if loc == nil {
+		loc = time.UTC
+	}
+	today := time.Now().In(loc).Format("2006-01-02")
+
+	_, err := h.db.Exec(r.Context(),
+		`INSERT INTO streak_freeze_uses (user_id, date) VALUES ($1, $2)
+		 ON CONFLICT (user_id, date) DO NOTHING`,
+		userID, today,
+	)
+	if err != nil {
+		jsonError(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	h.db.Exec(r.Context(),
+		`UPDATE users SET streak_freezes_remaining = streak_freezes_remaining - 1 WHERE id=$1`,
+		userID,
+	)
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// calcStreak computes streak counts from debrief dates + freeze dates.
+// Both slices are desc-ordered. Freeze dates count as "present" days.
+func calcStreak(dates []time.Time, freezeDates []time.Time) models.StreakData {
+	// Build a set of all "present" days (debrief OR freeze)
+	present := make(map[string]bool)
+	for _, d := range dates {
+		present[d.Truncate(24*time.Hour).Format("2006-01-02")] = true
+	}
+	for _, d := range freezeDates {
+		present[d.Truncate(24*time.Hour).Format("2006-01-02")] = true
+	}
+
+	if len(present) == 0 {
 		return models.StreakData{}
 	}
 
 	today := time.Now().Truncate(24 * time.Hour)
 	current := 0
 	longest := 0
-	streak := 0
-	prev := today
 
-	for _, d := range dates {
-		d = d.Truncate(24 * time.Hour)
-		diff := int(prev.Sub(d).Hours() / 24)
-		if diff <= 1 {
+	// Walk backward from today counting consecutive present days
+	streak := 0
+	for i := 0; ; i++ {
+		day := today.AddDate(0, 0, -i)
+		key := day.Format("2006-01-02")
+		if present[key] {
 			streak++
 			if streak > longest {
 				longest = streak
 			}
-			if current == 0 && (d.Equal(today) || d.Equal(today.Add(-24*time.Hour))) {
+			if i <= 1 { // today or yesterday counts toward current
 				current = streak
 			}
-		} else {
-			streak = 1
+		} else if i > 0 {
+			// Gap found — stop walking back for current streak
+			break
 		}
-		prev = d
-	}
-	if current == 0 && streak > 0 {
-		current = streak
+		if i > 400 {
+			break
+		}
 	}
 
 	return models.StreakData{

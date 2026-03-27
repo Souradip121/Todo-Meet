@@ -5,6 +5,25 @@ This is the single source of truth for all UI, architecture, and naming decision
 
 ---
 
+## Two Design Systems — Read This First
+
+This codebase has **two distinct design systems** that must never be mixed:
+
+### 1. Public Landing Page (`app/page.tsx`)
+**Paper/ink editorial aesthetic.** Light, typographic, premium.
+- Background: `#FAFAF6` (paper) with 28px grid pattern
+- Fonts: Playfair Display (headings), Lora (body), IBM Plex Mono (labels/code)
+- Accent: `#B91C1C` (red ink) for primary actions
+- Cards: `#FFFFFE` with `#D4D0C4` borders
+- CSS: `app/landing.module.css` — custom CSS module (Tailwind NOT used here)
+- Style tags: CSS variables scoped to `.landing` wrapper class
+
+### 2. App (all `app/(app)/` routes)
+**Dark terminal aesthetic.** The design system documented below applies ONLY to the authenticated app.
+- All the color, typography, spacing rules below are for the app — NOT the landing page.
+
+---
+
 ## What This App Is
 
 showup.day is a daily commitment and accountability app for student developers

@@ -67,8 +67,9 @@ type EODDebrief struct {
 }
 
 type StreakData struct {
-	Current      int `json:"current"`
-	PerfectDay   int `json:"perfect_day"`
-	Group        int `json:"group"`
-	LongestEver  int `json:"longest_ever"`
+	Current          int `json:"current"`
+	PerfectDay       int `json:"perfect_day"`
+	Group            int `json:"group"`
+	LongestEver      int `json:"longest_ever"`
+	FreezesRemaining int `json:"freezes_remaining"`
 }

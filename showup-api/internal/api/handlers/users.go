@@ -181,7 +181,7 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 	row := h.db.QueryRow(r.Context(),
 		`SELECT id, email, username, display_name, avatar_url, timezone,
 		        persona_level, streak_freezes_remaining, availability_mood, onboarding_complete,
-		        created_at
+		        current_focus, created_at
 		 FROM users WHERE id = $1`, userID,
 	)
 	var u struct {
@@ -195,16 +195,47 @@ func (h *AuthHandler) Me(w http.ResponseWriter, r *http.Request) {
 		StreakFreezesRemaining int16      `json:"streak_freezes_remaining"`
 		AvailabilityMood       *string    `json:"availability_mood"`
 		OnboardingComplete     bool       `json:"onboarding_complete"`
+		CurrentFocus           *string    `json:"current_focus"`
 		CreatedAt              time.Time  `json:"created_at"`
 	}
 	if err := row.Scan(&u.ID, &u.Email, &u.Username, &u.DisplayName, &u.AvatarURL,
 		&u.Timezone, &u.PersonaLevel, &u.StreakFreezesRemaining, &u.AvailabilityMood,
-		&u.OnboardingComplete, &u.CreatedAt); err != nil {
+		&u.OnboardingComplete, &u.CurrentFocus, &u.CreatedAt); err != nil {
 		jsonError(w, "user not found", http.StatusNotFound)
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(u)
+}
+
+// UpdateProfile updates mutable profile fields.
+// PATCH /api/v1/auth/profile
+func (h *AuthHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.UserIDFrom(r.Context())
+	var body struct {
+		CurrentFocus *string `json:"current_focus"`
+		DisplayName  *string `json:"display_name"`
+		Timezone     *string `json:"timezone"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		jsonError(w, "invalid request body", http.StatusBadRequest)
+		return
+	}
+
+	_, err := h.db.Exec(r.Context(),
+		`UPDATE users SET
+		   current_focus  = COALESCE($2, current_focus),
+		   display_name   = COALESCE($3, display_name),
+		   timezone       = COALESCE($4, timezone)
+		 WHERE id = $1`,
+		userID, body.CurrentFocus, body.DisplayName, body.Timezone,
+	)
+	if err != nil {
+		slog.Error("update profile", "error", err)
+		jsonError(w, "internal server error", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // helpers shared across handlers

@@ -93,57 +93,86 @@ func CalcDailyScores(ctx context.Context, db *pgxpool.Pool) error {
 		durationMs, rowsAffected,
 	)
 	slog.Info("score_calc complete", "users", rowsAffected, "duration_ms", durationMs)
+
+	// Restore 1 streak freeze at the start of each month for users who have none
+	// and haven't used a freeze this calendar month.
+	db.Exec(ctx,
+		`UPDATE users
+		 SET streak_freezes_remaining = 1
+		 WHERE streak_freezes_remaining = 0
+		   AND NOT EXISTS (
+		     SELECT 1 FROM streak_freeze_uses
+		     WHERE user_id = users.id
+		       AND date >= date_trunc('month', now())
+		   )`,
+	)
+
 	return nil
 }
 
+// UpsertTodayScore immediately recalculates and persists today's score for a single user.
+// Call this after any action that changes score components (commitment complete, debrief submit).
+func UpsertTodayScore(ctx context.Context, db *pgxpool.Pool, userID string) {
+	var tz string
+	if err := db.QueryRow(ctx, `SELECT timezone FROM users WHERE id=$1`, userID).Scan(&tz); err != nil {
+		tz = "UTC"
+	}
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		loc = time.UTC
+	}
+	today := time.Now().In(loc).Format("2006-01-02")
+	score, breakdown := calcScore(ctx, db, userID, today)
+	breakdownJSON, _ := json.Marshal(breakdown)
+	db.Exec(ctx,
+		`INSERT INTO daily_scores (user_id, date, score, breakdown)
+		 VALUES ($1, $2, $3, $4)
+		 ON CONFLICT (user_id, date) DO UPDATE
+		   SET score=EXCLUDED.score, breakdown=EXCLUDED.breakdown`,
+		userID, today, score, string(breakdownJSON),
+	)
+}
+
 // calcScore computes the 0-5 integrity score for one user on a given date.
+// Score = round((commitments_logged_today / total_active_commitments) * 5)
 func calcScore(ctx context.Context, db *pgxpool.Pool, userID, date string) (int, ScoreBreakdown) {
 	var bd ScoreBreakdown
 
-	// +1 declaration submitted?
-	var declCount int
-	db.QueryRow(ctx, `SELECT COUNT(*) FROM declarations WHERE user_id=$1 AND date=$2`, userID, date).Scan(&declCount)
-	if declCount > 0 {
-		bd.Declaration = 1
-	}
-
-	// +2 completion: ≥50% of commitments completed
-	// non_negotiable completions count double
-	rows, _ := db.Query(ctx,
-		`SELECT intensity, status FROM commitments WHERE user_id=$1 AND created_at::date=$2`,
+	// Count active recurring commitments for this user
+	var totalActive int
+	db.QueryRow(ctx,
+		`SELECT COUNT(*) FROM recurring_commitments
+		 WHERE user_id=$1 AND status='active' AND start_date <= $2`,
 		userID, date,
-	)
-	total, completed := 0, 0
-	for rows.Next() {
-		var intensity, status string
-		rows.Scan(&intensity, &status)
-		weight := 1
-		if intensity == "non_negotiable" {
-			weight = 2
+	).Scan(&totalActive)
+
+	if totalActive == 0 {
+		return 0, bd
+	}
+
+	// Count how many were logged on this date
+	var loggedCount int
+	db.QueryRow(ctx,
+		`SELECT COUNT(DISTINCT cl.commitment_id)
+		 FROM commitment_logs cl
+		 JOIN recurring_commitments rc ON rc.id=cl.commitment_id
+		 WHERE cl.user_id=$1 AND cl.date=$2 AND rc.status='active'`,
+		userID, date,
+	).Scan(&loggedCount)
+
+	// score = round(logged/total * 5), min 1 if any logged
+	var score int
+	if loggedCount > 0 {
+		raw := float64(loggedCount) / float64(totalActive) * 5
+		score = int(raw + 0.5) // round
+		if score < 1 {
+			score = 1
 		}
-		total += weight
-		if status == "completed" {
-			completed += weight
+		if score > 5 {
+			score = 5
 		}
 	}
-	rows.Close()
-	if total > 0 && completed*2 >= total { // ≥50%
-		bd.Completion = 2
-	}
 
-	// +1 debrief submitted?
-	var debriefCount int
-	db.QueryRow(ctx, `SELECT COUNT(*) FROM eod_debriefs WHERE user_id=$1 AND date=$2`, userID, date).Scan(&debriefCount)
-	if debriefCount > 0 {
-		bd.Debrief = 1
-	}
-
-	// +1 group contrib (Phase 2 — always 0 for now)
-	bd.GroupContrib = 0
-
-	score := bd.Declaration + bd.Completion + bd.Debrief + bd.GroupContrib
-	if score > 5 {
-		score = 5
-	}
+	bd.Completion = score
 	return score, bd
 }

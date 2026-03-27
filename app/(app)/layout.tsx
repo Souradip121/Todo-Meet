@@ -1,19 +1,30 @@
 "use client"
 
 import { useSession } from "@/lib/auth-client"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { useEffect } from "react"
 import { AppShell } from "@/components/layout/app-shell"
+import { apiClient } from "@/lib/api-client"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = useSession()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => {
     if (!isPending && !session) {
       router.replace("/login")
+      return
     }
-  }, [session, isPending, router])
+    // First-time user: no commitments → onboarding
+    if (!isPending && session && pathname !== "/onboarding") {
+      apiClient.get<unknown[]>("/commitments/recurring").then((list) => {
+        if (Array.isArray(list) && list.length === 0) {
+          router.replace("/onboarding")
+        }
+      }).catch(() => {})
+    }
+  }, [session, isPending, router, pathname])
 
   if (isPending) {
     return (

@@ -15,7 +15,11 @@ export function useCompleteCommitment() {
   return useMutation({
     mutationFn: ({ id, honest_score }: { id: string; honest_score?: number }) =>
       apiClient.patch(`/commitments/${id}/complete`, { honest_score }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["commitments"] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["commitments"] })
+      // Refresh grid — backend recalculates today's score in background
+      setTimeout(() => qc.invalidateQueries({ queryKey: ["grid"] }), 500)
+    },
   })
 }
 

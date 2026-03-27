@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"log/slog"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/Souradip121/showup-api/internal/api/middleware"
+	"github.com/Souradip121/showup-api/internal/jobs"
 )
 
 type CommitmentHandler struct {
@@ -88,6 +90,8 @@ func (h *CommitmentHandler) Complete(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
+	go jobs.UpsertTodayScore(context.Background(), h.db, userID)
+
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"id": cid, "status": status, "honest_score": hs, "completed_at": completedAt,

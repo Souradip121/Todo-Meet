@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useQueryClient } from "@tanstack/react-query"
 import { MoodSelector } from "@/components/features/debrief/mood-selector"
 import { apiClient } from "@/lib/api-client"
 
 export default function DebriefPage() {
   const router = useRouter()
+  const qc = useQueryClient()
   const [whatMoved, setWhatMoved] = useState("")
   const [whatDidnt, setWhatDidnt] = useState("")
   const [mood, setMood] = useState<number | null>(null)
@@ -37,6 +39,7 @@ export default function DebriefPage() {
         energy,
       })
       setDone(true)
+      setTimeout(() => qc.invalidateQueries({ queryKey: ["grid"] }), 500)
       setTimeout(() => router.push("/dashboard"), 1500)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to submit")
@@ -58,7 +61,7 @@ export default function DebriefPage() {
       <div className="max-w-lg mx-auto flex flex-col items-center justify-center py-24 gap-4">
         <div className="text-4xl">✓</div>
         <p className="text-slate-50 font-medium">Day closed.</p>
-        <p className="text-sm text-slate-400">Your score will update at midnight.</p>
+        <p className="text-sm text-slate-400">Your grid just updated.</p>
       </div>
     )
   }

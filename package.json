@@ -10,31 +10,32 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.6",
+    "@radix-ui/react-label": "^2.1.2",
+    "@radix-ui/react-separator": "^1.1.2",
+    "@radix-ui/react-slot": "^1.1.2",
+    "@radix-ui/react-tooltip": "^1.1.8",
+    "@tanstack/react-query": "^5.69.0",
+    "better-auth": "^1.2.7",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.475.0",
     "next": "15.2.4",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "zustand": "^5.0.3",
-    "@tanstack/react-query": "^5.69.0",
-    "better-auth": "^1.2.7",
-    "lucide-react": "^0.475.0",
-    "date-fns": "^4.1.0",
-    "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
+    "recharts": "^3.8.1",
     "tailwind-merge": "^3.0.2",
-    "@radix-ui/react-dialog": "^1.1.6",
-    "@radix-ui/react-slot": "^1.1.2",
-    "@radix-ui/react-tooltip": "^1.1.8",
-    "@radix-ui/react-separator": "^1.1.2",
-    "@radix-ui/react-label": "^2.1.2"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.15",
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "typescript": "^5",
-    "tailwindcss": "^4.0.15",
-    "@tailwindcss/postcss": "^4.0.15",
     "eslint": "^9",
-    "eslint-config-next": "15.2.4"
+    "eslint-config-next": "15.2.4",
+    "tailwindcss": "^4.0.15",
+    "typescript": "^5"
   }
 }

@@ -56,15 +56,19 @@ export function IntegrityGrid({ days, onDayClick }: IntegrityGridProps) {
         className="flex mb-1"
         style={{ paddingLeft: firstDow > 0 ? `${firstDow * 17}px` : 0 }}
       >
-        {monthLabels.map(({ col, label }) => (
-          <div
-            key={`${col}-${label}`}
-            className="text-xs text-slate-600 shrink-0"
-            style={{ width: 17, marginLeft: col === 0 ? 0 : undefined }}
-          >
-            {label}
-          </div>
-        ))}
+        {monthLabels.map(({ col, label }, i) => {
+          const prevCol = i === 0 ? col : monthLabels[i - 1].col
+          const ml = i === 0 ? 0 : (col - prevCol - 1) * 17
+          return (
+            <div
+              key={`${col}-${label}`}
+              className="text-xs text-slate-600 shrink-0"
+              style={{ width: 17, marginLeft: ml }}
+            >
+              {label}
+            </div>
+          )
+        })}
       </div>
 
       {/* Grid */}

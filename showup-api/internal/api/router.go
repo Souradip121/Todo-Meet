@@ -54,6 +54,9 @@ func NewRouter(db *pgxpool.Pool, redis *cache.RedisClient, authSvc *auth.Service
 	cmtH := handlers.NewCommitmentHandler(db)
 	debriefH := handlers.NewDebriefHandler(db)
 	scoreH := handlers.NewScoreHandler(db)
+	groupH := handlers.NewGroupHandler(db)
+	sessH := handlers.NewSessionHandler(db)
+	rcH := handlers.NewRecurringCommitmentHandler(db)
 
 	// Health check
 	r.Get("/health", handleHealth)
@@ -77,6 +80,7 @@ func NewRouter(db *pgxpool.Pool, redis *cache.RedisClient, authSvc *auth.Service
 			// Auth (protected)
 			r.Post("/auth/logout", authH.Logout)
 			r.Get("/auth/me", authH.Me)
+			r.Patch("/auth/profile", authH.UpdateProfile)
 
 			// Declarations
 			r.Route("/declarations", func(r chi.Router) {
@@ -104,13 +108,57 @@ func NewRouter(db *pgxpool.Pool, redis *cache.RedisClient, authSvc *auth.Service
 				r.Get("/{date}", debriefH.ByDate)
 			})
 
+			// Streak freeze
+			r.Post("/streaks/freeze", debriefH.FreezeStreak)
+
 			// Scores / integrity grid
 			r.Route("/scores", func(r chi.Router) {
 				r.Get("/grid", scoreH.Grid)
 				r.Get("/weekly", scoreH.Weekly)
 				r.Get("/day/{date}", scoreH.Day)
 			})
+
+			// Groups
+			r.Route("/groups", func(r chi.Router) {
+				r.Post("/", groupH.Create)
+				r.Get("/", groupH.List)
+				r.Post("/join", groupH.Join)
+				r.Get("/{id}", groupH.Get)
+				r.Post("/{id}/leave", groupH.Leave)
+				r.Post("/{id}/nudge/{userID}", groupH.Nudge)
+				r.Delete("/{id}", groupH.Archive)
+				r.Get("/{id}/sessions", sessH.ListForGroup)
+			})
+
+			// Sessions
+			r.Route("/sessions", func(r chi.Router) {
+				r.Post("/", sessH.Create)
+				r.Get("/active", sessH.Active)
+				r.Get("/{id}", sessH.Get)
+				r.Post("/{id}/join", sessH.Join)
+				r.Post("/{id}/start", sessH.Start)
+				r.Post("/{id}/end", sessH.End)
+				r.Patch("/{id}/update", sessH.SubmitUpdate)
+			})
+			// Recurring commitments (long-run activities)
+			r.Get("/commitments/today", rcH.Today)
+			r.Route("/commitments/recurring", func(r chi.Router) {
+				r.Post("/", rcH.Create)
+				r.Get("/", rcH.List)
+				r.Get("/{id}", rcH.Get)
+				r.Patch("/{id}", rcH.Update)
+				r.Delete("/{id}", rcH.Archive)
+				r.Post("/{id}/renew", rcH.Renew)
+				r.Post("/{id}/logs", rcH.LogTime)
+				r.Delete("/{id}/logs/{date}", rcH.DeleteLog)
+				r.Get("/{id}/stats/weekly", rcH.WeeklyStats)
+				r.Get("/{id}/stats/monthly", rcH.MonthlyStats)
+				r.Post("/{id}/share", rcH.Share)
+			})
 		})
+
+		// Public share endpoint (no auth)
+		r.Get("/share/{token}", rcH.PublicShare)
 	})
 
 	return r
