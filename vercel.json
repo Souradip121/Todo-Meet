@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/v1/:path*",
-      "destination": "https://api.showup.day/api/v1/:path*"
+      "destination": "https://todo-meet.onrender.com/api/v1/:path*"
     }
   ]
 }
