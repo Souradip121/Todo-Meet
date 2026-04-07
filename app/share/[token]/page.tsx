@@ -27,8 +27,9 @@ async function getShareData(token: string): Promise<ShareData | null> {
   }
 }
 
-export default async function SharePage({ params }: { params: { token: string } }) {
-  const data = await getShareData(params.token)
+export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params
+  const data = await getShareData(token)
 
   if (!data) {
     return (
@@ -44,21 +45,23 @@ export default async function SharePage({ params }: { params: { token: string } 
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0A0F] flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12"
+      style={{ background: "var(--paper)", backgroundImage: "linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px)", backgroundSize: "28px 28px" }}>
       <div className="max-w-lg w-full">
         {/* Logo */}
-        <div className="flex items-center gap-1 mb-8">
-          <span className="text-base font-semibold text-indigo-400">showup</span>
-          <span className="text-base font-semibold text-slate-50">.day</span>
+        <div className="mb-8">
+          <span style={{ fontFamily: "var(--font-playfair), serif", fontSize: "1.15rem", fontWeight: 700, color: "var(--ink)", letterSpacing: "-0.02em" }}>
+            show<span style={{ color: "var(--red-ink)" }}>up</span>.day
+          </span>
         </div>
 
-        <div className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-6">
+        <div style={{ background: "var(--card-bg)", border: "1.5px solid var(--card-border)", padding: "1.5rem" }}>
           {/* Commitment header */}
           <div className="flex items-center gap-3 mb-6">
-            <span className="text-4xl">{data.emoji}</span>
+            <span style={{ fontSize: "2.5rem" }}>{data.emoji}</span>
             <div>
-              <h1 className="text-xl font-semibold text-slate-50">{data.name}</h1>
-              <p className="text-xs text-slate-500 mt-0.5">
+              <h1 style={{ fontFamily: "var(--font-playfair), serif", fontSize: "1.4rem", fontWeight: 700, color: "var(--ink)" }}>{data.name}</h1>
+              <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", letterSpacing: "0.12em", color: "var(--ink-faint)", marginTop: "0.2rem" }}>
                 {data.period_days}-day commitment
               </p>
             </div>
@@ -68,33 +71,35 @@ export default async function SharePage({ params }: { params: { token: string } 
           <CommitmentHeatmap logs={data.logs} color={data.color} />
 
           {/* Score legend */}
-          <div className="flex items-center gap-3 mt-4 mb-6">
-            <span className="text-xs text-slate-600">Less</span>
-            {[0, 1, 2, 3, 4, 5].map((s) => (
-              <div key={s} className={`w-3.5 h-3.5 rounded-sm ${
-                s === 0 ? "bg-zinc-900" : s === 1 ? "bg-green-950" : s === 2 ? "bg-green-800" :
-                s === 3 ? "bg-green-600" : s === 4 ? "bg-green-500" : "bg-amber-400"
-              }`} />
+          <div className="flex items-center gap-2 mt-4 mb-6">
+            <span style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", color: "var(--ink-faint)" }}>Less</span>
+            {[
+              "bg-[#EEEBE3] border border-[#D4D0C4]",
+              "bg-[#dcfce7] border border-[#86efac]",
+              "bg-[#86efac] border border-[#22c55e]",
+              "bg-green-500 border border-green-600",
+              "bg-[#15803d] border border-[#14532d]",
+              "bg-amber-400 border border-amber-500",
+            ].map((cls, s) => (
+              <div key={s} className={`w-3.5 h-3.5 ${cls}`} />
             ))}
-            <span className="text-xs text-slate-600">More</span>
+            <span style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", color: "var(--ink-faint)" }}>More</span>
           </div>
 
           {/* Stats */}
-          <div className="flex items-center gap-6 pt-4 border-t border-[#1E1E2E]">
+          <div className="flex items-center gap-6" style={{ paddingTop: "1rem", borderTop: "1px solid var(--rule)" }}>
             {data.streak > 0 && (
               <div>
-                <p className="text-xs text-slate-500">Streak</p>
-                <p className="text-2xl font-mono font-semibold text-amber-400">🔥 {data.streak}</p>
+                <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", letterSpacing: "0.12em", color: "var(--ink-faint)" }}>Streak</p>
+                <p style={{ fontFamily: "var(--font-playfair), serif", fontSize: "1.75rem", fontWeight: 900, color: "var(--amber-ink)" }}>🔥 {data.streak}</p>
               </div>
             )}
-            <div>
-              <p className="text-xs text-slate-500">Total</p>
-              <p className="text-2xl font-mono font-semibold text-slate-50">{data.total_hours}h</p>
-            </div>
-            <div>
-              <p className="text-xs text-slate-500">Days logged</p>
-              <p className="text-2xl font-mono font-semibold text-slate-50">{data.days_logged}</p>
-            </div>
+            {[["Total", `${data.total_hours}h`], ["Days logged", `${data.days_logged}`]].map(([label, val]) => (
+              <div key={label}>
+                <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", letterSpacing: "0.12em", color: "var(--ink-faint)" }}>{label}</p>
+                <p style={{ fontFamily: "var(--font-playfair), serif", fontSize: "1.75rem", fontWeight: 900, color: "var(--ink)" }}>{val}</p>
+              </div>
+            ))}
           </div>
         </div>
 
