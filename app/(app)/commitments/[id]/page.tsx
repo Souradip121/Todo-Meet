@@ -102,6 +102,7 @@ export default function CommitmentDetailPage() {
     today_time_start: todayLog?.time_start ?? null,
     today_time_end: todayLog?.time_end ?? null,
     today_note: todayLog?.note ?? null,
+    today_photo_url: todayLog?.photo_url ?? null,
   }
 
   const endDate = new Date(commitment.end_date)
@@ -148,13 +149,17 @@ export default function CommitmentDetailPage() {
       {/* Heatmap */}
       <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6 mb-4">
         <CommitmentHeatmap logs={logs} color={commitment.color} />
-        <div className="flex items-center gap-3 mt-4">
+        <div className="flex items-center gap-2 mt-4">
           <span className="text-xs text-[var(--ink-faint)]">Less</span>
-          {[0, 1, 2, 3, 4, 5].map((s) => (
-            <div key={s} className={`w-3.5 h-3.5 rounded-sm ${
-              s === 0 ? "bg-zinc-900" : s === 1 ? "bg-green-950" : s === 2 ? "bg-green-800" :
-              s === 3 ? "bg-green-600" : s === 4 ? "bg-green-500" : "bg-amber-400"
-            }`} />
+          {[
+            "bg-[#EEEBE3] border border-[#D4D0C4]",
+            "bg-[#dcfce7] border border-[#86efac]",
+            "bg-[#86efac] border border-[#22c55e]",
+            "bg-green-500 border border-green-600",
+            "bg-[#15803d] border border-[#14532d]",
+            "bg-amber-400 border border-amber-500",
+          ].map((cls, s) => (
+            <div key={s} className={`w-3.5 h-3.5 ${cls}`} />
           ))}
           <span className="text-xs text-[var(--ink-faint)]">More</span>
         </div>

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Flame, LayoutDashboard, CalendarCheck, ListChecks, Timer, Users, LogOut } from "lucide-react"
+import { Flame, LayoutDashboard, CalendarCheck, ListChecks, Timer, Users, LogOut, Trophy, Rss, UserCircle } from "lucide-react"
 import { useStreaks } from "@/hooks/use-streaks"
 import { useSession, signOut } from "@/lib/auth-client"
 
@@ -12,6 +12,8 @@ const NAV_LINKS = [
   { href: "/commitments", label: "Commitments", icon: ListChecks },
   { href: "/focus", label: "Focus", icon: Timer },
   { href: "/groups", label: "Groups", icon: Users },
+  { href: "/challenges", label: "Challenges", icon: Trophy },
+  { href: "/feed", label: "Feed", icon: Rss },
 ]
 
 export function TopNav() {
@@ -84,7 +86,8 @@ export function TopNav() {
         )}
 
         <div className="relative group">
-          <button
+          <Link
+            href="/profile"
             className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
             style={{
               background: "var(--ink)",
@@ -92,14 +95,25 @@ export function TopNav() {
               fontFamily: "var(--font-ibm-mono), monospace",
               fontSize: "0.7rem",
               fontWeight: 500,
+              textDecoration: "none",
             }}
           >
             {initials}
-          </button>
+          </Link>
           <div
-            className="absolute right-0 top-10 w-40 overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all"
+            className="absolute right-0 top-10 w-44 overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all"
             style={{ background: "var(--card-bg)", border: "1.5px solid var(--card-border)" }}
           >
+            <Link
+              href="/profile"
+              className="w-full flex items-center gap-2 px-4 py-2.5 text-xs transition-colors"
+              style={{ fontFamily: "var(--font-ibm-mono), monospace", color: "var(--ink-muted)", letterSpacing: "0.05em", textDecoration: "none", display: "flex" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.background = "var(--paper-hover)"; (e.currentTarget as HTMLElement).style.color = "var(--ink)" }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.background = ""; (e.currentTarget as HTMLElement).style.color = "var(--ink-muted)" }}
+            >
+              <UserCircle className="w-3.5 h-3.5" />
+              profile
+            </Link>
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-2 px-4 py-2.5 text-xs transition-colors text-left"

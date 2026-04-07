@@ -23,38 +23,71 @@ func NewScoreHandler(db *pgxpool.Pool) *ScoreHandler {
 
 // Grid returns the full year of daily scores (365 cells).
 // GET /api/v1/scores/grid
-// GET /api/v1/scores/grid?tag=work
+// GET /api/v1/scores/grid?commitment_id={uuid}
 func (h *ScoreHandler) Grid(w http.ResponseWriter, r *http.Request) {
 	userID := middleware.UserIDFrom(r.Context())
-	tag := r.URL.Query().Get("tag")
+	commitmentID := r.URL.Query().Get("commitment_id")
 
-	var rows interface{ Next() bool; Scan(...interface{}) error; Close() }
-	var err error
+	w.Header().Set("Content-Type", "application/json")
 
-	if tag != "" {
-		// Filter: only include days where the user had commitments matching the tag
-		rows, err = h.db.Query(r.Context(),
-			`SELECT ds.date, ds.score, ds.breakdown
-			 FROM daily_scores ds
-			 WHERE ds.user_id = $1
-			   AND ds.date > now() - interval '1 year'
-			   AND EXISTS (
-			     SELECT 1 FROM commitments c
-			     WHERE c.user_id = ds.user_id
-			       AND c.created_at::date = ds.date
-			       AND c.tag = $2
-			   )
-			 ORDER BY ds.date`,
-			userID, tag,
-		)
-	} else {
-		rows, err = h.db.Query(r.Context(),
-			`SELECT date, score, breakdown FROM daily_scores
-			 WHERE user_id=$1 AND date > now() - interval '1 year'
+	if commitmentID != "" {
+		// Per-commitment heatmap: aggregate duration_minutes from commitment_logs
+		// Map to score: 0=0min, 1=1-30, 2=31-60, 3=61-90, 4=91-120, 5=120+
+		rows, err := h.db.Query(r.Context(),
+			`SELECT date, SUM(duration_minutes) AS total_min
+			 FROM commitment_logs
+			 WHERE commitment_id = $1
+			   AND user_id = $2
+			   AND date > CURRENT_DATE - interval '1 year'
+			 GROUP BY date
 			 ORDER BY date`,
-			userID,
+			commitmentID, userID,
 		)
+		if err != nil {
+			slog.Error("grid commitment query", "error", err)
+			jsonError(w, "internal server error", http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		result := []models.DayScore{}
+		for rows.Next() {
+			var date time.Time
+			var totalMin int
+			if err := rows.Scan(&date, &totalMin); err != nil {
+				continue
+			}
+			var score int16
+			switch {
+			case totalMin >= 120:
+				score = 5
+			case totalMin >= 91:
+				score = 4
+			case totalMin >= 61:
+				score = 3
+			case totalMin >= 31:
+				score = 2
+			case totalMin >= 1:
+				score = 1
+			}
+			result = append(result, models.DayScore{
+				Date:  date.Format("2006-01-02"),
+				Score: score,
+			})
+		}
+		json.NewEncoder(w).Encode(result)
+		return
 	}
+
+	// Default: aggregate commitment_logs live so today's logs are reflected immediately
+	rows, err := h.db.Query(r.Context(),
+		`SELECT date, SUM(duration_minutes) AS total_min
+		 FROM commitment_logs
+		 WHERE user_id = $1 AND date > CURRENT_DATE - interval '1 year'
+		 GROUP BY date
+		 ORDER BY date`,
+		userID,
+	)
 	if err != nil {
 		slog.Error("grid query", "error", err)
 		jsonError(w, "internal server error", http.StatusInternalServerError)
@@ -65,21 +98,28 @@ func (h *ScoreHandler) Grid(w http.ResponseWriter, r *http.Request) {
 	result := []models.DayScore{}
 	for rows.Next() {
 		var date time.Time
-		var score int16
-		var breakdownRaw string
-		if err := rows.Scan(&date, &score, &breakdownRaw); err != nil {
+		var totalMin int
+		if err := rows.Scan(&date, &totalMin); err != nil {
 			continue
 		}
-		var bd models.ScoreBreakdown
-		json.Unmarshal([]byte(breakdownRaw), &bd)
+		var score int16
+		switch {
+		case totalMin >= 120:
+			score = 5
+		case totalMin >= 91:
+			score = 4
+		case totalMin >= 61:
+			score = 3
+		case totalMin >= 31:
+			score = 2
+		case totalMin >= 1:
+			score = 1
+		}
 		result = append(result, models.DayScore{
-			Date:      date.Format("2006-01-02"),
-			Score:     score,
-			Breakdown: bd,
+			Date:  date.Format("2006-01-02"),
+			Score: score,
 		})
 	}
-
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(result)
 }
 

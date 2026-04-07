@@ -1,12 +1,12 @@
 // App-wide constants
 
 export const SCORE_CLASSES: Record<number, string> = {
-  0: "bg-zinc-900",
-  1: "bg-green-950",
-  2: "bg-green-800",
-  3: "bg-green-600",
-  4: "bg-green-500",
-  5: "bg-amber-400",
+  0: "bg-[#EEEBE3] border border-[#D4D0C4]",
+  1: "bg-[#dcfce7] border border-[#86efac]",
+  2: "bg-[#86efac] border border-[#22c55e]",
+  3: "bg-green-500 border border-green-600",
+  4: "bg-[#15803d] border border-[#14532d]",
+  5: "bg-amber-400 border border-amber-500",
 }
 
 export const INTENSITY_CONFIG = {

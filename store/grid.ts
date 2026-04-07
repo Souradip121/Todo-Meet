@@ -1,23 +1,21 @@
 import { create } from "zustand"
-import type { CommitmentTag } from "@/lib/types"
 
 interface GridState {
-  active_tag: CommitmentTag | "all"
+  active_commitment_id: string | "all"
   selected_day: string | null
   actions: {
-    setTag: (tag: CommitmentTag | "all") => void
+    setCommitment: (id: string | "all") => void
     selectDay: (date: string | null) => void
   }
 }
 
 export const useGridStore = create<GridState>()((set) => ({
-  active_tag: "all",
+  active_commitment_id: "all",
   selected_day: null,
   actions: {
-    setTag: (active_tag) => set({ active_tag }),
+    setCommitment: (active_commitment_id) => set({ active_commitment_id }),
     selectDay: (selected_day) => set({ selected_day }),
   },
 }))
 
 export const useGridActions = () => useGridStore((s) => s.actions)
-

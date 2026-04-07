@@ -13,7 +13,9 @@ import (
 	"github.com/Souradip121/showup-api/internal/auth"
 	"github.com/Souradip121/showup-api/internal/cache"
 	"github.com/Souradip121/showup-api/internal/db"
+	"github.com/Souradip121/showup-api/internal/email"
 	"github.com/Souradip121/showup-api/internal/jobs"
+	"github.com/Souradip121/showup-api/internal/storage"
 )
 
 func main() {
@@ -47,13 +49,26 @@ func main() {
 	// Auth service
 	authSvc := auth.New()
 
+	// Cloudinary (optional — photo upload disabled if not configured)
+	cdn := storage.NewCloudinaryClient(
+		os.Getenv("CLOUDINARY_CLOUD_NAME"),
+		os.Getenv("CLOUDINARY_API_KEY"),
+		os.Getenv("CLOUDINARY_API_SECRET"),
+	)
+	if cdn == nil {
+		slog.Warn("Cloudinary not configured — photo upload disabled")
+	}
+
+	// Email client (Resend — optional, duo notifications disabled if not configured)
+	emailClient := email.NewClient(os.Getenv("RESEND_API_KEY"))
+
 	// Background jobs
-	scheduler := jobs.NewScheduler(pool)
+	scheduler := jobs.NewScheduler(pool, emailClient)
 	scheduler.Start()
 	defer scheduler.Stop()
 
 	// Router
-	router := api.NewRouter(pool, redis, authSvc)
+	router := api.NewRouter(pool, redis, authSvc, cdn)
 
 	port := os.Getenv("PORT")
 	if port == "" {

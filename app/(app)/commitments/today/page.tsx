@@ -68,11 +68,21 @@ export default function TodayPage() {
                 <div>
                   <p style={{ fontFamily: "var(--font-playfair), serif", fontSize: "1rem", fontWeight: 700, color: "var(--ink)" }}>{c.name}</p>
                   {c.today_logged && c.today_minutes ? (
-                    <p className="flex items-center gap-1" style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.68rem", color: "var(--green-ink)", marginTop: "0.2rem" }}>
-                      <Check className="w-3 h-3" />
-                      {fmtMins(c.today_minutes)}
-                      {c.today_note && <span style={{ color: "var(--ink-faint)" }}> · {c.today_note}</span>}
-                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <p className="flex items-center gap-1" style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.68rem", color: "var(--green-ink)" }}>
+                        <Check className="w-3 h-3" />
+                        {fmtMins(c.today_minutes)}
+                        {c.today_note && <span style={{ color: "var(--ink-faint)" }}> · {c.today_note}</span>}
+                      </p>
+                      {c.today_photo_url && (
+                        <img src={c.today_photo_url} alt="proof"
+                          className="w-8 h-8 object-cover cursor-pointer"
+                          style={{ border: "1px solid var(--card-border)" }}
+                          onClick={() => window.open(c.today_photo_url!, "_blank")}
+                          title="View photo proof"
+                        />
+                      )}
+                    </div>
                   ) : (
                     <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.68rem", color: "var(--ink-faint)", marginTop: "0.2rem" }}>Not logged yet</p>
                   )}

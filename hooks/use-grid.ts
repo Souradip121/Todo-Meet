@@ -2,15 +2,16 @@ import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api-client"
 import type { DayScore } from "@/lib/types"
 
-export function useGrid(tag?: string) {
-  const endpoint = tag && tag !== "all"
-    ? `/scores/grid?tag=${tag}`
-    : "/scores/grid"
+export function useGrid(commitmentId?: string) {
+  const endpoint =
+    commitmentId && commitmentId !== "all"
+      ? `/scores/grid?commitment_id=${commitmentId}`
+      : "/scores/grid"
 
   return useQuery<DayScore[]>({
-    queryKey: ["grid", tag ?? "all"],
+    queryKey: ["grid", commitmentId ?? "all"],
     queryFn: () => apiClient.get(endpoint),
-    staleTime: 1000 * 60 * 60 * 24,  // 24h
+    staleTime: 1000 * 60 * 60 * 24, // 24h
   })
 }
 

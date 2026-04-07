@@ -28,6 +28,7 @@ func (h *GroupHandler) Create(w http.ResponseWriter, r *http.Request) {
 		Title        string `json:"title"`
 		Description  string `json:"description"`
 		DurationDays int    `json:"duration_days"`
+		Type         string `json:"type"` // "group" or "duo"
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.Title == "" {
 		jsonError(w, "title is required", http.StatusUnprocessableEntity)
@@ -37,16 +38,23 @@ func (h *GroupHandler) Create(w http.ResponseWriter, r *http.Request) {
 		jsonError(w, "title max 100 characters", http.StatusUnprocessableEntity)
 		return
 	}
+	if body.Type != "duo" {
+		body.Type = "group"
+	}
 	if body.DurationDays <= 0 {
-		body.DurationDays = 30
+		if body.Type == "duo" {
+			body.DurationDays = 0 // duos are open-ended
+		} else {
+			body.DurationDays = 30
+		}
 	}
 
 	var groupID, inviteCode string
 	err := h.db.QueryRow(r.Context(),
-		`INSERT INTO groups (host_id, title, description, duration_days)
-		 VALUES ($1, $2, $3, $4)
+		`INSERT INTO groups (host_id, title, description, duration_days, type)
+		 VALUES ($1, $2, $3, $4, $5)
 		 RETURNING id, invite_code`,
-		userID, body.Title, body.Description, body.DurationDays,
+		userID, body.Title, body.Description, body.DurationDays, body.Type,
 	).Scan(&groupID, &inviteCode)
 	if err != nil {
 		slog.Error("create group", "error", err)
@@ -65,7 +73,7 @@ func (h *GroupHandler) Create(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"id": groupID, "invite_code": inviteCode,
 		"title": body.Title, "description": body.Description,
-		"duration_days": body.DurationDays,
+		"duration_days": body.DurationDays, "type": body.Type,
 	})
 }
 
@@ -76,7 +84,7 @@ func (h *GroupHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	rows, err := h.db.Query(r.Context(),
 		`SELECT g.id, g.title, g.description, g.duration_days, g.start_date,
-		        g.status, g.invite_code, g.host_id, gm.role,
+		        g.status, g.invite_code, g.host_id, g.type, gm.role,
 		        (SELECT COUNT(*) FROM group_members WHERE group_id=g.id) AS member_count
 		 FROM groups g
 		 JOIN group_members gm ON gm.group_id=g.id AND gm.user_id=$1
@@ -92,16 +100,16 @@ func (h *GroupHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	result := []map[string]interface{}{}
 	for rows.Next() {
-		var id, title, desc, status, inviteCode, hostID, role string
+		var id, title, desc, status, inviteCode, hostID, groupType, role string
 		var durationDays, memberCount int
 		var startDate time.Time
 		if err := rows.Scan(&id, &title, &desc, &durationDays, &startDate,
-			&status, &inviteCode, &hostID, &role, &memberCount); err == nil {
+			&status, &inviteCode, &hostID, &groupType, &role, &memberCount); err == nil {
 			result = append(result, map[string]interface{}{
 				"id": id, "title": title, "description": desc,
 				"duration_days": durationDays, "start_date": startDate.Format("2006-01-02"),
 				"status": status, "invite_code": inviteCode,
-				"host_id": hostID, "role": role, "member_count": memberCount,
+				"host_id": hostID, "type": groupType, "role": role, "member_count": memberCount,
 			})
 		}
 	}
@@ -197,22 +205,30 @@ func (h *GroupHandler) Join(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var groupID string
+	var groupID, groupType string
 	if err := h.db.QueryRow(r.Context(),
-		`SELECT id FROM groups WHERE invite_code=$1 AND status='active'`,
+		`SELECT id, type FROM groups WHERE invite_code=$1 AND status='active'`,
 		body.InviteCode,
-	).Scan(&groupID); err != nil {
+	).Scan(&groupID, &groupType); err != nil {
 		jsonError(w, "invalid or expired invite code", http.StatusNotFound)
 		return
 	}
 
-	// Check max members (10)
+	// Enforce member cap: 2 for duos, 10 for groups
+	maxMembers := 10
+	if groupType == "duo" {
+		maxMembers = 2
+	}
 	var count int
 	h.db.QueryRow(r.Context(),
 		`SELECT COUNT(*) FROM group_members WHERE group_id=$1`, groupID,
 	).Scan(&count)
-	if count >= 10 {
-		jsonError(w, "group is full (max 10 members)", http.StatusConflict)
+	if count >= maxMembers {
+		if groupType == "duo" {
+			jsonError(w, "this duo already has a partner", http.StatusConflict)
+		} else {
+			jsonError(w, "group is full (max 10 members)", http.StatusConflict)
+		}
 		return
 	}
 

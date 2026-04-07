@@ -1,12 +1,19 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"golang.org/x/oauth2"
 
 	"github.com/Souradip121/showup-api/internal/api/middleware"
 	"github.com/Souradip121/showup-api/internal/auth"
@@ -18,12 +25,17 @@ const (
 )
 
 type AuthHandler struct {
-	db      *pgxpool.Pool
-	authSvc *auth.Service
+	db          *pgxpool.Pool
+	authSvc     *auth.Service
+	googleCfg   *oauth2.Config
 }
 
 func NewAuthHandler(db *pgxpool.Pool, authSvc *auth.Service) *AuthHandler {
-	return &AuthHandler{db: db, authSvc: authSvc}
+	return &AuthHandler{
+		db:        db,
+		authSvc:   authSvc,
+		googleCfg: auth.BuildGoogleConfig(),
+	}
 }
 
 type registerRequest struct {
@@ -216,6 +228,8 @@ func (h *AuthHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		CurrentFocus *string `json:"current_focus"`
 		DisplayName  *string `json:"display_name"`
 		Timezone     *string `json:"timezone"`
+		CollegeURL   *string `json:"college_url"`
+		AvatarURL    *string `json:"avatar_url"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		jsonError(w, "invalid request body", http.StatusBadRequest)
@@ -226,9 +240,12 @@ func (h *AuthHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		`UPDATE users SET
 		   current_focus  = COALESCE($2, current_focus),
 		   display_name   = COALESCE($3, display_name),
-		   timezone       = COALESCE($4, timezone)
+		   timezone       = COALESCE($4, timezone),
+		   college_url    = COALESCE($5, college_url),
+		   avatar_url     = COALESCE($6, avatar_url)
 		 WHERE id = $1`,
 		userID, body.CurrentFocus, body.DisplayName, body.Timezone,
+		body.CollegeURL, body.AvatarURL,
 	)
 	if err != nil {
 		slog.Error("update profile", "error", err)
@@ -236,6 +253,112 @@ func (h *AuthHandler) UpdateProfile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// GoogleLogin redirects to Google's OAuth consent screen.
+// GET /api/v1/auth/google
+func (h *AuthHandler) GoogleLogin(w http.ResponseWriter, r *http.Request) {
+	if h.googleCfg.ClientID == "" {
+		jsonError(w, "Google OAuth not configured", http.StatusNotImplemented)
+		return
+	}
+	b := make([]byte, 16)
+	rand.Read(b)
+	state := hex.EncodeToString(b)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "oauth_state",
+		Value:    state,
+		MaxAge:   600,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   os.Getenv("APP_ENV") == "production",
+	})
+	http.Redirect(w, r, h.googleCfg.AuthCodeURL(state), http.StatusTemporaryRedirect)
+}
+
+// GoogleCallback handles Google's OAuth redirect, upserts the user, and returns JWTs.
+// GET /api/v1/auth/google/callback
+func (h *AuthHandler) GoogleCallback(w http.ResponseWriter, r *http.Request) {
+	// Verify state
+	cookie, err := r.Cookie("oauth_state")
+	if err != nil || cookie.Value != r.URL.Query().Get("state") {
+		jsonError(w, "invalid oauth state", http.StatusBadRequest)
+		return
+	}
+
+	gUser, err := auth.FetchGoogleUser(r.Context(), h.googleCfg, r.URL.Query().Get("code"))
+	if err != nil {
+		slog.Error("google callback", "error", err)
+		jsonError(w, "failed to fetch google user", http.StatusInternalServerError)
+		return
+	}
+
+	// Upsert: find by google_id or email, then link/create
+	var userID, email string
+	err = h.db.QueryRow(r.Context(),
+		`SELECT id, email FROM users WHERE google_id = $1`,
+		gUser.ID,
+	).Scan(&userID, &email)
+
+	if err != nil {
+		// Try by email (user may have registered with email before)
+		err2 := h.db.QueryRow(r.Context(),
+			`SELECT id, email FROM users WHERE email = $1`,
+			gUser.Email,
+		).Scan(&userID, &email)
+
+		if err2 != nil {
+			// New user — create account
+			username := sanitizeUsername(gUser.Email)
+			row := h.db.QueryRow(r.Context(),
+				`INSERT INTO users (email, username, display_name, avatar_url, google_id, onboarding_complete)
+				 VALUES ($1, $2, $3, $4, $5, false) RETURNING id, email`,
+				gUser.Email, username, gUser.Name, gUser.Picture, gUser.ID,
+			)
+			if err3 := row.Scan(&userID, &email); err3 != nil {
+				slog.Error("google callback: create user", "error", err3)
+				jsonError(w, "internal server error", http.StatusInternalServerError)
+				return
+			}
+		} else {
+			// Existing email user — link google_id
+			h.db.Exec(r.Context(),
+				`UPDATE users SET google_id = $1, avatar_url = COALESCE(avatar_url, $2) WHERE id = $3`,
+				gUser.ID, gUser.Picture, userID,
+			)
+		}
+	}
+
+	access, _ := h.authSvc.IssueToken(userID, email, accessTTL)
+	refresh, _ := h.authSvc.IssueToken(userID, email, refreshTTL)
+
+	frontendURL := os.Getenv("FRONTEND_URL")
+	if frontendURL == "" {
+		frontendURL = "http://localhost:3000"
+	}
+	params := url.Values{}
+	params.Set("token", access)
+	params.Set("refresh", refresh)
+	http.Redirect(w, r, fmt.Sprintf("%s/auth/callback?%s", frontendURL, params.Encode()), http.StatusTemporaryRedirect)
+}
+
+// sanitizeUsername derives a safe username from an email address.
+func sanitizeUsername(email string) string {
+	local := strings.Split(email, "@")[0]
+	var b strings.Builder
+	for _, c := range strings.ToLower(local) {
+		if (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' {
+			b.WriteRune(c)
+		}
+	}
+	s := b.String()
+	if len(s) > 20 {
+		s = s[:20]
+	}
+	if s == "" {
+		s = "user"
+	}
+	return s
 }
 
 // helpers shared across handlers

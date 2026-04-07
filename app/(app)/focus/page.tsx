@@ -4,10 +4,10 @@ import { useEffect, useState } from "react"
 import { useTimerStore, useTimerActions } from "@/store/timer"
 import { FocusRing } from "@/components/features/timer/focus-ring"
 import { TimerControls } from "@/components/features/timer/timer-controls"
-import { useTodayCommitments } from "@/hooks/use-commitments"
+import { useTodayCommitments } from "@/hooks/use-recurring-commitments"
 import { apiClient } from "@/lib/api-client"
 import { Play } from "lucide-react"
-import type { Commitment } from "@/lib/types"
+import type { TodayCommitment } from "@/lib/types"
 
 function fmt(sec: number): string {
   const m = Math.floor(sec / 60)
@@ -19,9 +19,9 @@ export default function FocusPage() {
   const { data: commitments } = useTodayCommitments()
   const { status, elapsed_sec, total_sec, commitment_id, commitment_title } = useTimerStore()
   const actions = useTimerActions()
-  const [selected, setSelected] = useState<Commitment | null>(null)
+  const [selected, setSelected] = useState<TodayCommitment | null>(null)
   const [mode, setMode] = useState<"pomodoro" | "freeform">("pomodoro")
-  const pending = commitments?.filter((c) => c.status === "pending") ?? []
+  const pending = commitments ?? []
   const idle = status === "idle"
 
   useEffect(() => {
@@ -32,7 +32,7 @@ export default function FocusPage() {
 
   function startTimer() {
     if (!selected) return
-    actions.start(selected.id, selected.title, mode)
+    actions.start(selected.id, selected.name, mode)
   }
 
   const display = mode === "pomodoro" ? fmt(Math.max(0, total_sec - elapsed_sec)) : fmt(elapsed_sec)
@@ -91,20 +91,20 @@ export default function FocusPage() {
                         border: selected?.id === c.id ? "1.5px solid rgba(185,28,28,0.4)" : "1.5px solid var(--card-border)",
                         fontFamily: "var(--font-lora), serif", fontSize: "0.9rem", color: "var(--ink)", cursor: "pointer",
                       }}>
-                      {c.title}
+                      {c.emoji && <span>{c.emoji}</span>}{c.name}
                     </button>
                   ))}
                 </div>
               )}
             </div>
 
-            <button onClick={startTimer} disabled={!selected || pending.length === 0}
+            <button onClick={startTimer} disabled={!selected}
               className="w-full flex items-center justify-center gap-2"
               style={{
                 background: "var(--ink)", color: "var(--paper)", border: "none", height: "2.6rem",
                 fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.82rem", letterSpacing: "0.05em",
-                cursor: !selected || pending.length === 0 ? "not-allowed" : "pointer",
-                opacity: !selected || pending.length === 0 ? 0.4 : 1,
+                cursor: !selected ? "not-allowed" : "pointer",
+                opacity: !selected ? 0.4 : 1,
               }}>
               <Play className="w-4 h-4" />
               Start session

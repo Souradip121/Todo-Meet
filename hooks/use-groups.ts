@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api-client"
-import type { GroupCommitment, GroupMember } from "@/lib/types"
+import type { GroupCommitment, GroupMember, DuoDetail } from "@/lib/types"
 
 interface GroupDetail {
   group: GroupCommitment
@@ -25,10 +25,19 @@ export function useGroup(id: string) {
   })
 }
 
+export function useDuoDetail(id: string, groupType?: string) {
+  return useQuery<DuoDetail>({
+    queryKey: ["duo", id],
+    queryFn: () => apiClient.get(`/groups/${id}/duo`),
+    staleTime: 1000 * 30,
+    enabled: !!id && groupType === "duo",
+  })
+}
+
 export function useCreateGroup() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (body: { title: string; description?: string; duration_days?: number }) =>
+    mutationFn: (body: { title: string; description?: string; duration_days?: number; type?: "group" | "duo" }) =>
       apiClient.post("/groups", body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["groups"] }),
   })

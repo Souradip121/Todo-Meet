@@ -5,6 +5,7 @@ import { Pencil, Check, X, Shield } from "lucide-react"
 import { useGrid } from "@/hooks/use-grid"
 import { useStreaks, useFreezeStreak } from "@/hooks/use-streaks"
 import { useGridStore } from "@/store/grid"
+import { useCommitments } from "@/hooks/use-recurring-commitments"
 import { IntegrityGrid } from "@/components/features/grid/integrity-grid"
 import { GridTagFilter } from "@/components/features/grid/grid-tag-filter"
 import { StatCard } from "@/components/ui/stat-card"
@@ -13,8 +14,9 @@ import { useActiveSessions } from "@/hooks/use-sessions"
 import type { DayScore } from "@/lib/types"
 
 export default function DashboardPage() {
-  const activeTag = useGridStore((s) => s.active_tag)
-  const { data: days = [], isLoading } = useGrid(activeTag === "all" ? undefined : activeTag)
+  const activeCommitmentId = useGridStore((s) => s.active_commitment_id)
+  const { data: commitments = [] } = useCommitments()
+  const { data: days = [], isLoading } = useGrid(activeCommitmentId === "all" ? undefined : activeCommitmentId)
   const { data: streaks } = useStreaks()
   const { data: session } = useSession()
   const [selectedDay, setSelectedDay] = useState<DayScore | null>(null)
@@ -129,22 +131,26 @@ export default function DashboardPage() {
             <p style={{ fontFamily: "var(--font-playfair), serif", fontSize: "1.1rem", fontWeight: 700, color: "var(--ink)" }}>Integrity Grid</p>
             <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", color: "var(--ink-faint)", marginTop: "0.2rem", letterSpacing: "0.08em" }}>Last 365 days</p>
           </div>
-          <GridTagFilter />
+          <GridTagFilter commitments={commitments} />
         </div>
 
         {isLoading ? (
           <div className="h-28 animate-pulse" style={{ background: "var(--paper)" }} />
         ) : (
-          <IntegrityGrid days={days} onDayClick={setSelectedDay} activeTag={activeTag} />
+          <IntegrityGrid days={days} onDayClick={setSelectedDay} />
         )}
 
-        <div className="flex items-center gap-3 mt-4">
+        <div className="flex items-center gap-2 mt-4">
           <span style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", color: "var(--ink-faint)" }}>Less</span>
-          {[0, 1, 2, 3, 4, 5].map((s) => (
-            <div key={s} className={`w-3.5 h-3.5 rounded-sm ${
-              s === 0 ? "bg-zinc-200" : s === 1 ? "bg-green-200" : s === 2 ? "bg-green-400" :
-              s === 3 ? "bg-green-600" : s === 4 ? "bg-green-700" : "bg-amber-500"
-            }`} />
+          {[
+            "bg-[#EEEBE3] border border-[#D4D0C4]",
+            "bg-[#dcfce7] border border-[#86efac]",
+            "bg-[#86efac] border border-[#22c55e]",
+            "bg-green-500 border border-green-600",
+            "bg-[#15803d] border border-[#14532d]",
+            "bg-amber-400 border border-amber-500",
+          ].map((cls, s) => (
+            <div key={s} className={`w-3.5 h-3.5 ${cls}`} />
           ))}
           <span style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", color: "var(--ink-faint)" }}>More</span>
         </div>

@@ -14,10 +14,11 @@ import (
 	"github.com/Souradip121/showup-api/internal/api/middleware"
 	"github.com/Souradip121/showup-api/internal/auth"
 	"github.com/Souradip121/showup-api/internal/cache"
+	"github.com/Souradip121/showup-api/internal/storage"
 )
 
 // NewRouter builds the chi router with all middleware and routes wired.
-func NewRouter(db *pgxpool.Pool, redis *cache.RedisClient, authSvc *auth.Service) http.Handler {
+func NewRouter(db *pgxpool.Pool, redis *cache.RedisClient, authSvc *auth.Service, cdn *storage.CloudinaryClient) http.Handler {
 	r := chi.NewRouter()
 
 	// Core middleware
@@ -57,6 +58,11 @@ func NewRouter(db *pgxpool.Pool, redis *cache.RedisClient, authSvc *auth.Service
 	groupH := handlers.NewGroupHandler(db)
 	sessH := handlers.NewSessionHandler(db)
 	rcH := handlers.NewRecurringCommitmentHandler(db)
+	photoH := handlers.NewPhotoHandler(db, cdn)
+	duoH := handlers.NewDuoHandler(db)
+	challengeH := handlers.NewChallengeHandler(db)
+	feedH := handlers.NewFeedHandler(db)
+	friendsH := handlers.NewFriendsHandler(db)
 
 	// Health check
 	r.Get("/health", handleHealth)
@@ -154,8 +160,40 @@ func NewRouter(db *pgxpool.Pool, redis *cache.RedisClient, authSvc *auth.Service
 				r.Get("/{id}/stats/weekly", rcH.WeeklyStats)
 				r.Get("/{id}/stats/monthly", rcH.MonthlyStats)
 				r.Post("/{id}/share", rcH.Share)
+				// Photo endpoints
+				r.Post("/{id}/logs/{date}/photo-sign", photoH.SignUpload)
+				r.Patch("/{id}/logs/{date}/photo", photoH.ConfirmPhoto)
+				r.Delete("/{id}/logs/{date}/photo", photoH.DeletePhoto)
+			})
+
+			// Duo detail
+			r.Get("/groups/{id}/duo", duoH.GetDuoDetail)
+
+			// Challenges
+			r.Route("/challenges", func(r chi.Router) {
+				r.Get("/", challengeH.List)
+				r.Get("/{id}", challengeH.Get)
+				r.Post("/{id}/join", challengeH.Join)
+				r.Post("/{id}/checkin", challengeH.Checkin)
+				r.Get("/{id}/leaderboard", challengeH.Leaderboard)
+			})
+
+			// Activity feed
+			r.Get("/feed", feedH.List)
+
+			// Friends
+			r.Route("/friends", func(r chi.Router) {
+				r.Get("/", friendsH.List)
+				r.Get("/search", friendsH.Search)
+				r.Post("/{id}/request", friendsH.SendRequest)
+				r.Post("/{id}/accept", friendsH.Accept)
+				r.Delete("/{id}", friendsH.Remove)
 			})
 		})
+
+		// Google OAuth (public — no auth middleware)
+		r.Get("/auth/google", authH.GoogleLogin)
+		r.Get("/auth/google/callback", authH.GoogleCallback)
 
 		// Public share endpoint (no auth)
 		r.Get("/share/{token}", rcH.PublicShare)

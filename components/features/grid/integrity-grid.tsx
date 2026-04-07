@@ -6,7 +6,6 @@ import type { DayScore } from "@/lib/types"
 interface IntegrityGridProps {
   days: DayScore[]
   onDayClick: (day: DayScore) => void
-  activeTag?: string
 }
 
 // Build a 365-day array ending today
@@ -25,12 +24,12 @@ function buildCalendar(days: DayScore[]): { date: string; score: DayScore | null
   return result
 }
 
-function getMonthLabels(calendar: { date: string }[]): { col: number; label: string }[] {
+function getMonthLabels(calendar: { date: string }[], firstDow: number): { col: number; label: string }[] {
   const labels: { col: number; label: string }[] = []
   let lastMonth = -1
   calendar.forEach((day, idx) => {
     const m = new Date(day.date).getUTCMonth()
-    const col = Math.floor(idx / 7)
+    const col = Math.floor((idx + firstDow) / 7)
     if (m !== lastMonth) {
       labels.push({ col, label: new Date(day.date).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }) })
       lastMonth = m
@@ -42,23 +41,19 @@ function getMonthLabels(calendar: { date: string }[]): { col: number; label: str
 export function IntegrityGrid({ days, onDayClick }: IntegrityGridProps) {
   const today = new Date().toISOString().slice(0, 10)
   const calendar = buildCalendar(days)
-  const cols = Math.ceil(calendar.length / 7)
-  const monthLabels = getMonthLabels(calendar)
+  const firstDow = new Date(calendar[0].date + "T00:00:00").getDay()
+  const monthLabels = getMonthLabels(calendar, firstDow)
 
   // Pad start so week starts on Sunday aligned with first day
-  const firstDow = new Date(calendar[0].date + "T00:00:00").getDay()
   const padded = Array(firstDow).fill(null).concat(calendar)
 
   return (
     <div className="overflow-x-auto">
       {/* Month labels */}
-      <div
-        className="flex mb-1"
-        style={{ paddingLeft: firstDow > 0 ? `${firstDow * 17}px` : 0 }}
-      >
+      <div className="flex mb-1">
         {monthLabels.map(({ col, label }, i) => {
-          const prevCol = i === 0 ? col : monthLabels[i - 1].col
-          const ml = i === 0 ? 0 : (col - prevCol - 1) * 17
+          const prevCol = i === 0 ? 0 : monthLabels[i - 1].col
+          const ml = (col - prevCol) * 17
           return (
             <div
               key={`${col}-${label}`}
@@ -90,8 +85,8 @@ export function IntegrityGrid({ days, onDayClick }: IntegrityGridProps) {
               key={date}
               onClick={() => score && onDayClick(score)}
               title={`${date} — score ${scoreVal}`}
-              className={`w-[14px] h-[14px] rounded-sm transition-transform ${SCORE_CLASSES[scoreVal]} ${
-                isToday ? "ring-1 ring-indigo-500/50" : ""
+              className={`w-[14px] h-[14px] transition-transform ${SCORE_CLASSES[scoreVal]} ${
+                isToday ? "ring-1 ring-[var(--red-ink)]/50" : ""
               } ${isPerfect ? "hover:scale-105" : ""} ${score ? "cursor-pointer" : "cursor-default"}`}
             />
           )

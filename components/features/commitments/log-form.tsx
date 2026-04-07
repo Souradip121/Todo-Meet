@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useLogTime } from "@/hooks/use-recurring-commitments"
+import { PhotoUploadButton } from "./photo-upload-button"
 import type { TodayCommitment } from "@/lib/types"
 
 const QUICK_PILLS = [
@@ -17,16 +18,18 @@ interface LogFormProps {
   commitment: TodayCommitment | { id: string; target_min_day: number | null }
   defaultDate?: "today" | "yesterday"
   existingMinutes?: number | null
+  existingPhotoUrl?: string | null
   onSaved?: () => void
 }
 
-export function LogForm({ commitment, defaultDate = "today", existingMinutes, onSaved }: LogFormProps) {
+export function LogForm({ commitment, defaultDate = "today", existingMinutes, existingPhotoUrl, onSaved }: LogFormProps) {
   const [tab, setTab] = useState<"today" | "yesterday">(defaultDate)
   const [minutes, setMinutes] = useState<string>(existingMinutes ? String(existingMinutes) : "")
   const [timeStart, setTimeStart] = useState("")
   const [timeEnd, setTimeEnd] = useState("")
   const [note, setNote] = useState("")
   const [showTimeRange, setShowTimeRange] = useState(false)
+  const [savedDate, setSavedDate] = useState<string | null>(existingMinutes ? (defaultDate === "today" ? new Date().toISOString().slice(0, 10) : new Date(Date.now() - 86400000).toISOString().slice(0, 10)) : null)
   const logTime = useLogTime(commitment.id)
 
   const yesterday = new Date()
@@ -51,6 +54,7 @@ export function LogForm({ commitment, defaultDate = "today", existingMinutes, on
       },
       {
         onSuccess: () => {
+          setSavedDate(tab === "today" ? todayStr : yesterdayStr)
           setMinutes("")
           setNote("")
           setTimeStart("")
@@ -145,13 +149,24 @@ export function LogForm({ commitment, defaultDate = "today", existingMinutes, on
         className="w-full bg-[var(--paper)] border border-[var(--card-border)] text-[var(--ink)] placeholder:text-[var(--ink-faint)] focus:border-[rgba(185,28,28,0.5)] focus:outline-none rounded-lg h-9 px-3 text-sm"
       />
 
-      <button
-        onClick={handleSave}
-        disabled={!minutes || parseInt(minutes) <= 0 || logTime.isPending}
-        className="bg-[var(--ink)] hover:bg-[var(--red-ink)] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium h-9 px-5 rounded-lg transition-colors"
-      >
-        {logTime.isPending ? "Saving…" : existingMinutes ? "Update" : "Log"}
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          onClick={handleSave}
+          disabled={!minutes || parseInt(minutes) <= 0 || logTime.isPending}
+          className="bg-[var(--ink)] hover:bg-[var(--red-ink)] disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium h-9 px-5 rounded-lg transition-colors"
+        >
+          {logTime.isPending ? "Saving…" : existingMinutes ? "Update" : "Log"}
+        </button>
+
+        {/* Show photo button after log is saved */}
+        {savedDate && (
+          <PhotoUploadButton
+            commitmentId={commitment.id}
+            date={savedDate}
+            existingPhotoUrl={existingPhotoUrl}
+          />
+        )}
+      </div>
     </div>
   )
 }

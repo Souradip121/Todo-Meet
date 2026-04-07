@@ -3,7 +3,7 @@
 
 const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api/v1"
 
-function saveTokens(access: string, refresh: string) {
+export function saveTokens(access: string, refresh: string) {
   if (typeof window === "undefined") return
   localStorage.setItem("access_token", access)
   localStorage.setItem("refresh_token", refresh)
@@ -98,7 +98,7 @@ export async function signOut() {
 
 // ─── updateProfile ───────────────────────────────────────────────────────────
 
-export async function updateProfile(body: { current_focus?: string | null; display_name?: string; timezone?: string }) {
+export async function updateProfile(body: { current_focus?: string | null; display_name?: string; timezone?: string; college_url?: string | null; avatar_url?: string | null }) {
   const token = getAccessToken()
   if (!token) throw new Error("Not authenticated")
   const res = await fetch(`${BASE}/auth/profile`, {

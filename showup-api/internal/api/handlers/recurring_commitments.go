@@ -137,7 +137,7 @@ func (h *RecurringCommitmentHandler) Get(w http.ResponseWriter, r *http.Request)
 
 	// Logs for last 365 days
 	logs, _ := h.db.Query(r.Context(),
-		`SELECT date, duration_minutes, time_start, time_end, note
+		`SELECT date, duration_minutes, time_start, time_end, note, photo_url
 		 FROM commitment_logs
 		 WHERE commitment_id=$1
 		   AND date > now() - interval '1 year'
@@ -149,15 +149,15 @@ func (h *RecurringCommitmentHandler) Get(w http.ResponseWriter, r *http.Request)
 	for logs.Next() {
 		var date time.Time
 		var mins int
-		var ts, te *string
-		var note *string
-		if err := logs.Scan(&date, &mins, &ts, &te, &note); err == nil {
+		var ts, te, note, photoURL *string
+		if err := logs.Scan(&date, &mins, &ts, &te, &note, &photoURL); err == nil {
 			logList = append(logList, map[string]interface{}{
 				"date":             date.Format("2006-01-02"),
 				"duration_minutes": mins,
 				"time_start":       ts,
 				"time_end":         te,
 				"note":             note,
+				"photo_url":        photoURL,
 			})
 		}
 	}
@@ -437,7 +437,7 @@ func (h *RecurringCommitmentHandler) Today(w http.ResponseWriter, r *http.Reques
 	rows, err := h.db.Query(r.Context(),
 		`SELECT rc.id, rc.name, rc.emoji, rc.color, rc.target_min_day,
 		        rc.end_date, rc.period_days, rc.start_date,
-		        cl.duration_minutes, cl.time_start, cl.time_end, cl.note
+		        cl.duration_minutes, cl.time_start, cl.time_end, cl.note, cl.photo_url
 		 FROM recurring_commitments rc
 		 LEFT JOIN commitment_logs cl
 		   ON cl.commitment_id=rc.id AND cl.date=$2
@@ -458,10 +458,10 @@ func (h *RecurringCommitmentHandler) Today(w http.ResponseWriter, r *http.Reques
 		var endDate, startDate time.Time
 		var periodDays int
 		var logMins *int
-		var ts, te, note *string
+		var ts, te, note, photoURL *string
 		if err := rows.Scan(&id, &name, &emoji, &color, &targetMin,
 			&endDate, &periodDays, &startDate,
-			&logMins, &ts, &te, &note); err == nil {
+			&logMins, &ts, &te, &note, &photoURL); err == nil {
 			result = append(result, map[string]interface{}{
 				"id": id, "name": name, "emoji": emoji, "color": color,
 				"target_min_day":   targetMin,
@@ -473,6 +473,7 @@ func (h *RecurringCommitmentHandler) Today(w http.ResponseWriter, r *http.Reques
 				"today_time_start": ts,
 				"today_time_end":   te,
 				"today_note":       note,
+				"today_photo_url":  photoURL,
 			})
 		}
 	}

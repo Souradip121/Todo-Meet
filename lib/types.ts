@@ -74,6 +74,9 @@ export interface GroupCommitment {
   start_date: string
   status: "active" | "completed" | "archived"
   invite_code: string
+  type: "group" | "duo"
+  role: "host" | "member"
+  member_count: number
   members: GroupMember[]
   created_at: string
 }
@@ -139,6 +142,7 @@ export interface CommitmentLog {
   time_start: string | null
   time_end: string | null
   note: string | null
+  photo_url: string | null
 }
 
 export interface TodayCommitment extends RecurringCommitment {
@@ -147,6 +151,20 @@ export interface TodayCommitment extends RecurringCommitment {
   today_time_start: string | null
   today_time_end: string | null
   today_note: string | null
+  today_photo_url: string | null
+}
+
+export interface DuoDetail {
+  duo_streak: number
+  both_logged_today: boolean
+  members: Array<{
+    user_id: string
+    display_name: string
+    avatar_url: string | null
+    role: string
+    individual_streak: number
+    recent_days: string[]
+  }>
 }
 
 export interface CommitmentDetail {
