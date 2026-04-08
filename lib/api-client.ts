@@ -1,24 +1,13 @@
-// API client — wraps all fetch calls to the Go API
-// Automatically attaches auth token
-// Base URL: NEXT_PUBLIC_API_URL
+// API client — all requests go to same-origin Next.js API routes.
+// Authentication is handled via session cookies (better-auth HttpOnly cookies).
+// No manual token headers needed.
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL
-
-function getToken(): string | null {
-  if (typeof window === "undefined") return null
-  return localStorage.getItem("access_token")
-}
-
-async function request<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const token = getToken()
-  const res = await fetch(`${BASE_URL}${endpoint}`, {
+async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  const res = await fetch(`/api${endpoint}`, {
     ...options,
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
   })
@@ -39,4 +28,3 @@ export const apiClient = {
     request<T>(endpoint, { method: "PUT", body: JSON.stringify(body) }),
   delete: <T>(endpoint: string) => request<T>(endpoint, { method: "DELETE" }),
 }
-

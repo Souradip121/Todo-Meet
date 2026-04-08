@@ -10,6 +10,7 @@ import { IntegrityGrid } from "@/components/features/grid/integrity-grid"
 import { GridTagFilter } from "@/components/features/grid/grid-tag-filter"
 import { StatCard } from "@/components/ui/stat-card"
 import { useSession, updateProfile } from "@/lib/auth-client"
+import { useProfile } from "@/hooks/use-profile"
 import { useActiveSessions } from "@/hooks/use-sessions"
 import type { DayScore } from "@/lib/types"
 
@@ -18,7 +19,8 @@ export default function DashboardPage() {
   const { data: commitments = [] } = useCommitments()
   const { data: days = [], isLoading } = useGrid(activeCommitmentId === "all" ? undefined : activeCommitmentId)
   const { data: streaks } = useStreaks()
-  const { data: session } = useSession()
+  useSession() // keep auth session alive
+  const { data: profile } = useProfile()
   const [selectedDay, setSelectedDay] = useState<DayScore | null>(null)
   const freezeStreak = useFreezeStreak()
   const { data: activeSessions } = useActiveSessions()
@@ -26,7 +28,7 @@ export default function DashboardPage() {
   const [focusInput, setFocusInput] = useState("")
   const [savingFocus, setSavingFocus] = useState(false)
 
-  const currentFocus = session?.user?.current_focus
+  const currentFocus = profile?.current_focus
   const last7 = days.slice(-7)
   const completionPct = last7.length
     ? Math.round(last7.reduce((sum, d) => sum + d.score, 0) / (last7.length * 5) * 100)

@@ -1,96 +1,145 @@
+"use client"
+
 import { create } from "zustand"
 
 interface Member {
   user_id: string
   display_name: string
   avatar_url: string | null
-  last_heartbeat: number  // timestamp
   update: string | null
 }
 
 interface SessionState {
-  room_id: string | null
-  commitment_title: string | null
+  session_id: string | null
+  duration_min: number
+  started_at: string | null   // ISO timestamp from server when session went "running"
   members: Member[]
-  timer: { running: boolean; remaining_sec: number }
   is_host: boolean
   phase: "waiting" | "running" | "ended"
-  ws: WebSocket | null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  channel: any | null         // Pusher PresenceChannel
   actions: {
-    connect: (roomId: string, wsToken: string) => void
+    connect: (sessionId: string, isHost: boolean, durationMin: number) => void
     disconnect: () => void
-    startTimer: (duration_sec: number) => void
-    pauseTimer: () => void
-    endSession: (update: string) => void
-    submitUpdate: (update: string) => void
-    setMemberUpdate: (user_id: string, update: string) => void
-    heartbeat: () => void
+    /** Compute remaining seconds from started_at + duration_min */
+    getRemainingSeconds: () => number
+    submitUpdate: (text: string) => Promise<void>
+    setMemberUpdate: (userId: string, update: string) => void
   }
 }
 
 export const useSessionStore = create<SessionState>()((set, get) => ({
-  room_id: null,
-  commitment_title: null,
+  session_id: null,
+  duration_min: 25,
+  started_at: null,
   members: [],
-  timer: { running: false, remaining_sec: 0 },
   is_host: false,
   phase: "waiting",
-  ws: null,
+  channel: null,
 
   actions: {
-    connect: (roomId, wsToken) => {
-      const ws = new WebSocket(
-        `${process.env.NEXT_PUBLIC_WS_URL}/ws/session/${roomId}?token=${wsToken}`
-      )
-      ws.onmessage = (e) => {
-        const msg = JSON.parse(e.data)
-        switch (msg.type) {
-          case "room_state":
-            set({ members: msg.payload.members, timer: msg.payload.timer })
-            break
-          case "tick":
-            set((s) => ({ timer: { ...s.timer, remaining_sec: msg.payload.remaining } }))
-            break
-          case "member_join":
-            set((s) => ({ members: [...s.members, msg.payload] }))
-            break
-          case "member_leave":
-            set((s) => ({ members: s.members.filter((m) => m.user_id !== msg.payload.user_id) }))
-            break
-          case "session_end":
-            set({ phase: "ended" })
-            break
-        }
-      }
-      ws.onclose = () => set({ ws: null, phase: "waiting" })
-      set({ room_id: roomId, ws, phase: "waiting" })
+    connect: (sessionId, isHost, durationMin) => {
+      // Dynamic import so pusher-js only loads client-side
+      import("@/lib/pusher-client").then(({ getPusherClient }) => {
+        const pusher = getPusherClient()
+        const channel = pusher.subscribe(`presence-session-${sessionId}`)
+
+        channel.bind("pusher:subscription_succeeded", (data: {
+          members: Record<string, { display_name: string; avatar_url: string | null }>
+        }) => {
+          const members: Member[] = Object.entries(data.members).map(([id, info]) => ({
+            user_id:      id,
+            display_name: info.display_name,
+            avatar_url:   info.avatar_url,
+            update:       null,
+          }))
+          set({ members })
+        })
+
+        channel.bind("pusher:member_added", (member: {
+          id: string
+          info: { display_name: string; avatar_url: string | null }
+        }) => {
+          set((s) => ({
+            members: s.members.some((m) => m.user_id === member.id)
+              ? s.members
+              : [
+                  ...s.members,
+                  {
+                    user_id:      member.id,
+                    display_name: member.info.display_name,
+                    avatar_url:   member.info.avatar_url,
+                    update:       null,
+                  },
+                ],
+          }))
+        })
+
+        channel.bind("pusher:member_removed", (member: { id: string }) => {
+          set((s) => ({ members: s.members.filter((m) => m.user_id !== member.id) }))
+        })
+
+        channel.bind("session-started", ({ started_at }: { started_at: string }) => {
+          set({ phase: "running", started_at })
+        })
+
+        channel.bind("session-ended", () => {
+          set({ phase: "ended" })
+        })
+
+        channel.bind("member-update", ({ user_id, update_text }: { user_id: string; update_text: string }) => {
+          set((s) => ({
+            members: s.members.map((m) =>
+              m.user_id === user_id ? { ...m, update: update_text } : m,
+            ),
+          }))
+        })
+
+        set({
+          session_id: sessionId,
+          is_host:    isHost,
+          duration_min: durationMin,
+          channel,
+          phase: "waiting",
+          started_at: null,
+        })
+      })
     },
+
     disconnect: () => {
-      get().ws?.close()
-      set({ ws: null, room_id: null, members: [], phase: "waiting" })
+      const { session_id, channel } = get()
+      if (channel && session_id) {
+        channel.pusher.unsubscribe(`presence-session-${session_id}`)
+      }
+      set({ channel: null, session_id: null, members: [], phase: "waiting", started_at: null })
     },
-    startTimer: (duration_sec) => {
-      get().ws?.send(JSON.stringify({ type: "start_timer", payload: { durationSec: duration_sec } }))
+
+    getRemainingSeconds: () => {
+      const { started_at, duration_min, phase } = get()
+      if (phase !== "running" || !started_at) return duration_min * 60
+      const elapsed = Math.floor((Date.now() - new Date(started_at).getTime()) / 1000)
+      return Math.max(0, duration_min * 60 - elapsed)
     },
-    pauseTimer: () => {
-      get().ws?.send(JSON.stringify({ type: "pause_timer", payload: {} }))
+
+    submitUpdate: async (text: string) => {
+      const { session_id } = get()
+      if (!session_id) return
+      await fetch(`/api/sessions/${session_id}/update`, {
+        method:      "PATCH",
+        headers:     { "Content-Type": "application/json" },
+        credentials: "include",
+        body:        JSON.stringify({ text }),
+      })
     },
-    endSession: (update) => {
-      get().ws?.send(JSON.stringify({ type: "end_session", payload: { update } }))
-    },
-    submitUpdate: (update) => {
-      get().ws?.send(JSON.stringify({ type: "end_session", payload: { update } }))
-    },
-    setMemberUpdate: (user_id, update) => {
+
+    setMemberUpdate: (userId, update) => {
       set((s) => ({
-        members: s.members.map((m) => m.user_id === user_id ? { ...m, update } : m)
+        members: s.members.map((m) =>
+          m.user_id === userId ? { ...m, update } : m,
+        ),
       }))
-    },
-    heartbeat: () => {
-      get().ws?.send(JSON.stringify({ type: "heartbeat", payload: {} }))
     },
   },
 }))
 
 export const useSessionActions = () => useSessionStore((s) => s.actions)
-

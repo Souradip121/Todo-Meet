@@ -5,6 +5,8 @@ import type {
   CommitmentDetail,
   TodayCommitment,
   CommitmentStatPoint,
+  ComparisonStatPoint,
+  YearlyStatPoint,
 } from "@/lib/types"
 
 export function useCommitments(includeArchived = false) {
@@ -119,6 +121,24 @@ export function useCommitmentStats(id: string, period: "weekly" | "monthly") {
     queryKey: ["commitment-stats", id, period],
     queryFn: () => apiClient.get(`/commitments/recurring/${id}/stats/${period}`),
     staleTime: 1000 * 60 * 5,
+    enabled: !!id,
+  })
+}
+
+export function useCommitmentComparisonStats(id: string, period: "vs-weekly" | "vs-monthly") {
+  return useQuery<ComparisonStatPoint[]>({
+    queryKey: ["commitment-stats", id, period],
+    queryFn: () => apiClient.get(`/commitments/recurring/${id}/stats/${period}`),
+    staleTime: 1000 * 60 * 5,
+    enabled: !!id,
+  })
+}
+
+export function useCommitmentYearlyStats(id: string) {
+  return useQuery<YearlyStatPoint[]>({
+    queryKey: ["commitment-stats", id, "yearly"],
+    queryFn: () => apiClient.get(`/commitments/recurring/${id}/stats/yearly`),
+    staleTime: 1000 * 60 * 60,
     enabled: !!id,
   })
 }

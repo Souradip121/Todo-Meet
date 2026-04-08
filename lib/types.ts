@@ -179,6 +179,17 @@ export interface CommitmentStatPoint {
   days_logged: number
 }
 
+export interface ComparisonStatPoint {
+  label: string
+  current: number
+  previous: number
+}
+
+export interface YearlyStatPoint {
+  month: string  // "Jan", "Feb", ...
+  minutes: number
+}
+
 // duration_minutes → 0-5 score for heatmap
 export function minutesToScore(minutes: number): 0 | 1 | 2 | 3 | 4 | 5 {
   if (minutes <= 0) return 0

@@ -33,7 +33,8 @@ export default function ProfilePage() {
   const updateProfile = useUpdateProfile()
   const { data: friends = [] } = useFriends()
   const [searchQ, setSearchQ] = useState("")
-  const { data: searchResults = [] } = useFriendSearch(searchQ)
+  const [collegeSearchFilter, setCollegeSearchFilter] = useState(false)
+  const { data: searchResults = [] } = useFriendSearch(searchQ, collegeSearchFilter)
   const sendRequest = useSendFriendRequest()
   const acceptRequest = useAcceptFriendRequest()
   const removeF = useRemoveFriend()
@@ -199,10 +200,20 @@ export default function ProfilePage() {
             placeholder="Find people…"
             value={searchQ}
             onChange={(e) => setSearchQ(e.target.value)}
-            style={{ ...inputStyle, marginBottom: "0.5rem" }}
+            style={{ ...inputStyle, marginBottom: "0.4rem" }}
             onFocus={(e) => { e.currentTarget.style.borderColor = "var(--red-ink)" }}
             onBlur={(e) => { e.currentTarget.style.borderColor = "var(--card-border)" }}
           />
+          {profile.college_url && (
+            <div style={{ marginBottom: "0.5rem" }}>
+              <button
+                onClick={() => setCollegeSearchFilter((v) => !v)}
+                style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.6rem", letterSpacing: "0.06em", background: collegeSearchFilter ? "var(--ink)" : "transparent", color: collegeSearchFilter ? "var(--paper)" : "var(--ink-muted)", border: "1px solid var(--card-border)", padding: "0.22rem 0.6rem", cursor: "pointer" }}
+              >
+                Same college only
+              </button>
+            </div>
+          )}
 
           {searchResults.length > 0 && (
             <div style={{ background: "var(--card-bg)", border: "1.5px solid var(--card-border)", borderTop: "none", marginBottom: "0.8rem" }}>

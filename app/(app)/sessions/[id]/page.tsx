@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { ArrowLeft, Play, Square } from "lucide-react"
 import { useSessionStore, useSessionActions } from "@/store/session"
@@ -8,6 +8,7 @@ import { PresenceRow } from "@/components/features/sessions/presence-row"
 import { SessionEndCards } from "@/components/features/sessions/session-end-cards"
 import { useSession as useAuthSession } from "@/lib/auth-client"
 import { apiClient } from "@/lib/api-client"
+import { useQuery } from "@tanstack/react-query"
 
 function formatTime(sec: number) {
   const m = Math.floor(sec / 60)
@@ -19,42 +20,60 @@ export default function SessionPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const { data: auth } = useAuthSession()
-  const { room_id, members, timer, phase, is_host } = useSessionStore()
+  const { session_id, members, phase, is_host } = useSessionStore()
   const actions = useSessionActions()
-  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [remaining, setRemaining] = useState(0)
+  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const currentUserId = auth?.user?.id ?? ""
 
+  // Fetch session metadata (host, duration)
+  const { data: sessionData } = useQuery({
+    queryKey: ["session", id],
+    queryFn: () => apiClient.get<{
+      id: string
+      host_id: string
+      duration_min: number
+      status: string
+    }>(`/sessions/${id}`),
+    staleTime: 60_000,
+  })
+
+  const isHost = sessionData?.host_id === currentUserId
+  const durationMin = sessionData?.duration_min ?? 25
+
   useEffect(() => {
-    // Join via REST then connect WebSocket
+    if (!sessionData) return
+
     async function joinAndConnect() {
       try {
         await apiClient.post(`/sessions/${id}/join`, {})
-        // Use access token directly as WS auth (server validates Bearer token)
-        const token = localStorage.getItem("access_token") ?? ""
-        actions.connect(id, token)
       } catch {
-        // Already a member — still connect
-        const token = localStorage.getItem("access_token") ?? ""
-        actions.connect(id, token)
+        // Already a member — continue
       }
+      actions.connect(id, isHost, durationMin)
     }
     joinAndConnect()
 
-    // Send heartbeat every 5s while page is open
-    heartbeatRef.current = setInterval(() => actions.heartbeat(), 5000)
-
     return () => {
-      if (heartbeatRef.current) clearInterval(heartbeatRef.current)
       actions.disconnect()
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id])
+  }, [id, sessionData])
+
+  // Tick the timer every second from getRemainingSeconds()
+  useEffect(() => {
+    setRemaining(actions.getRemainingSeconds())
+    tickRef.current = setInterval(() => {
+      setRemaining(actions.getRemainingSeconds())
+    }, 1000)
+    return () => {
+      if (tickRef.current) clearInterval(tickRef.current)
+    }
+  }, [actions, phase])
 
   function handleStart() {
-    apiClient.post(`/sessions/${id}/start`, {}).then(() => {
-      actions.startTimer(25 * 60)
-    })
+    apiClient.post(`/sessions/${id}/start`, {})
   }
 
   function handleEnd() {
@@ -62,14 +81,13 @@ export default function SessionPage() {
   }
 
   function handleSubmitUpdate(update: string) {
-    apiClient.patch(`/sessions/${id}/update`, { text: update })
     actions.submitUpdate(update)
   }
 
-  if (!room_id) {
+  if (!session_id) {
     return (
       <div className="flex items-center justify-center py-32">
-        <div className="w-6 h-6 border-2 border-[rgba(185,28,28,0.2)] border-t-indigo-500 rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-[rgba(99,102,241,0.2)] border-t-indigo-500 rounded-full animate-spin" />
       </div>
     )
   }
@@ -79,15 +97,15 @@ export default function SessionPage() {
       {/* Back */}
       <button
         onClick={() => router.back()}
-        className="flex items-center gap-2 text-sm text-[var(--ink-muted)] hover:text-[var(--ink)] mb-8 transition-colors"
+        className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-50 mb-8 transition-colors"
       >
         <ArrowLeft className="w-4 h-4" />
         Back
       </button>
 
       {/* Presence */}
-      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6 mb-4">
-        <p className="text-xs font-medium text-[var(--ink-muted)] uppercase tracking-wider mb-4">
+      <div className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-6 mb-4">
+        <p className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-4">
           In this session
         </p>
         <PresenceRow members={members} />
@@ -95,15 +113,15 @@ export default function SessionPage() {
 
       {/* Timer */}
       {phase !== "ended" && (
-        <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-8 mb-4 flex flex-col items-center gap-6">
-          <div className="text-5xl font-semibold font-mono text-[var(--ink)]">
-            {formatTime(timer.remaining_sec)}
+        <div className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-8 mb-4 flex flex-col items-center gap-6">
+          <div className="text-5xl font-semibold font-mono text-slate-50">
+            {formatTime(remaining)}
           </div>
 
           {phase === "waiting" && is_host && (
             <button
               onClick={handleStart}
-              className="flex items-center gap-2 bg-[var(--ink)] hover:bg-[var(--red-ink)] text-white font-medium h-10 px-6 rounded-lg transition-colors"
+              className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-600 text-white font-medium h-10 px-6 rounded-lg transition-colors"
             >
               <Play className="w-4 h-4" />
               Start session
@@ -111,13 +129,13 @@ export default function SessionPage() {
           )}
 
           {phase === "waiting" && !is_host && (
-            <p className="text-sm text-[var(--ink-muted)]">Waiting for host to start…</p>
+            <p className="text-sm text-slate-400">Waiting for host to start…</p>
           )}
 
           {phase === "running" && is_host && (
             <button
               onClick={handleEnd}
-              className="flex items-center gap-2 bg-[rgba(185,28,28,0.06)] hover:bg-[rgba(185,28,28,0.1)] text-[var(--red-ink)] border border-[rgba(185,28,28,0.2)] h-10 px-6 rounded-lg transition-colors"
+              className="flex items-center gap-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 h-10 px-6 rounded-lg transition-colors"
             >
               <Square className="w-4 h-4" />
               End session
@@ -125,14 +143,14 @@ export default function SessionPage() {
           )}
 
           {phase === "running" && !is_host && (
-            <p className="text-sm text-[var(--green-ink)]">Session running</p>
+            <p className="text-sm text-green-500">Session running</p>
           )}
         </div>
       )}
 
       {/* End cards */}
       {phase === "ended" && (
-        <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6">
+        <div className="bg-[#111118] border border-[#1E1E2E] rounded-xl p-6">
           <SessionEndCards
             members={members}
             currentUserId={currentUserId}

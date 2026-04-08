@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api-client"
 import { updateProfile } from "@/lib/auth-client"
 
+
 export interface UserProfile {
   id: string
   email: string
@@ -19,7 +20,7 @@ export interface UserProfile {
 export function useProfile() {
   return useQuery<UserProfile>({
     queryKey: ["profile"],
-    queryFn: () => apiClient.get("/auth/me"),
+    queryFn: () => apiClient.get("/users/me"),
     staleTime: 1000 * 60 * 5,
   })
 }

@@ -10,6 +10,14 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.r2.cloudflarestorage.com",
       },
+      {
+        protocol: "https",
+        hostname: "media.licdn.com",  // LinkedIn profile pictures
+      },
+      {
+        protocol: "https",
+        hostname: "*.licdn.com",
+      },
     ],
   },
 }

@@ -7,6 +7,7 @@ import { AppShell } from "@/components/layout/app-shell"
 import { apiClient } from "@/lib/api-client"
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  // better-auth: { data: { user: { id, email, name, image }, session } | null, isPending }
   const { data: session, isPending } = useSession()
   const router = useRouter()
   const pathname = usePathname()

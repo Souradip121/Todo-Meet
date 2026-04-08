@@ -136,9 +136,8 @@ export default function LandingPage() {
         <ul className={s.navLinks}>
           <li><a href="#how">how it works</a></li>
           <li><a href="#social">duo &amp; groups</a></li>
-          <li><a href="#pricing">pricing</a></li>
         </ul>
-        <Link className={s.navCta} href="/register">join waitlist →</Link>
+        <Link className={s.navCta} href="/login">get started →</Link>
       </nav>
 
       {/* HERO */}
@@ -331,78 +330,6 @@ export default function LandingPage() {
       </section>
 
       <div className={s.sectionRule} />
-
-      {/* PRICING */}
-      <section id="pricing" className={s.sectionWrap} style={{ paddingBottom: "1rem" }}>
-        <div className={s.sectionLabel} style={{ fontFamily: "var(--font-ibm-mono), monospace" }}>
-          03 — pricing
-        </div>
-        <h2 className={s.h2} style={{ fontFamily: "var(--font-playfair), serif" }}>
-          Simple, honest<br /><em>pricing.</em>
-        </h2>
-        <p className={s.sectionIntro} style={{ fontFamily: "var(--font-lora), serif" }}>
-          Start free. Upgrade when you're ready to go deeper.
-        </p>
-
-        <div className={`${s.pricingGrid} ${s.fadeUp}`} ref={(el) => { fadeRefs.current[5] = el }}>
-          {[
-            {
-              name: "Free", price: "₹0", period: "forever", featured: false,
-              features: [
-                { t: "3 active commitments", ok: true },
-                { t: "Heatmap tracking", ok: true },
-                { t: "Personal streaks", ok: true },
-                { t: "Duo mode", ok: false },
-                { t: "Group mode (up to 10)", ok: false },
-                { t: "Month-end bar charts", ok: false },
-                { t: "Commitment history", ok: false },
-              ],
-              cta: "Get started",
-            },
-            {
-              name: "Pro", price: "₹199", period: "per month", featured: true,
-              features: [
-                { t: "Unlimited commitments", ok: true },
-                { t: "Heatmap tracking", ok: true },
-                { t: "Personal streaks", ok: true },
-                { t: "Duo mode", ok: true },
-                { t: "Group mode (up to 10)", ok: true },
-                { t: "Month-end bar charts", ok: true },
-                { t: "Commitment history", ok: true },
-              ],
-              cta: "Start Pro — free 14 days",
-            },
-            {
-              name: "Team", price: "₹799", period: "per month · up to 20 members", featured: false,
-              features: [
-                { t: "Everything in Pro", ok: true },
-                { t: "Admin dashboard", ok: true },
-                { t: "Custom group sizes", ok: true },
-                { t: "Weekly digest emails", ok: true },
-                { t: "Priority support", ok: true },
-                { t: "SSO & team export", ok: false },
-                { t: "Dedicated onboarding", ok: false },
-              ],
-              cta: "Talk to us",
-            },
-          ].map((plan) => (
-            <div key={plan.name} className={`${s.pricingCard} ${plan.featured ? s.featured : ""}`}>
-              {plan.featured && <div className={s.popularBadge} style={{ fontFamily: "var(--font-ibm-mono), monospace" }}>most popular</div>}
-              <div className={s.planName} style={{ fontFamily: "var(--font-ibm-mono), monospace" }}>{plan.name}</div>
-              <div className={s.planPrice} style={{ fontFamily: "var(--font-playfair), serif" }}>{plan.price}</div>
-              <div className={s.planPeriod} style={{ fontFamily: "var(--font-ibm-mono), monospace" }}>{plan.period}</div>
-              <ul className={s.planFeatures}>
-                {plan.features.map((f) => (
-                  <li key={f.t} className={f.ok ? "included" : ""}>{f.t}</li>
-                ))}
-              </ul>
-              <button className={s.btnPlan} style={{ fontFamily: "var(--font-ibm-mono), monospace" }}>
-                {plan.cta}
-              </button>
-            </div>
-          ))}
-        </div>
-      </section>
 
       {/* WAITLIST */}
       <div className={s.waitlistSection} id="waitlist">

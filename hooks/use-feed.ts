@@ -46,11 +46,15 @@ export function useFriends() {
   })
 }
 
-export function useFriendSearch(q: string) {
+export function useFriendSearch(q: string, collegeOnly = false) {
   return useQuery<SearchResult[]>({
-    queryKey: ["friends", "search", q],
-    queryFn: () => apiClient.get(`/friends/search?q=${encodeURIComponent(q)}`),
-    enabled: q.length >= 2,
+    queryKey: ["friends", "search", q, collegeOnly],
+    queryFn: () => {
+      const params = new URLSearchParams({ q })
+      if (collegeOnly) params.set("college", "true")
+      return apiClient.get(`/friends/search?${params}`)
+    },
+    enabled: q.length >= 2 || collegeOnly,
     staleTime: 1000 * 30,
   })
 }

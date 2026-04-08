@@ -2,10 +2,18 @@
   "framework": "nextjs",
   "buildCommand": "next build",
   "outputDirectory": ".next",
-  "rewrites": [
+  "crons": [
     {
-      "source": "/api/v1/:path*",
-      "destination": "https://todo-meet.onrender.com/api/v1/:path*"
+      "path": "/api/cron/daily-score",
+      "schedule": "5 0 * * *"
+    },
+    {
+      "path": "/api/cron/duo-notifications",
+      "schedule": "10 0 * * *"
+    },
+    {
+      "path": "/api/cron/challenge-streaks",
+      "schedule": "15 0 * * *"
     }
   ]
 }

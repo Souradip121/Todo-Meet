@@ -6,7 +6,6 @@ interface Member {
   user_id: string
   display_name: string
   avatar_url: string | null
-  last_heartbeat: number
   update: string | null
 }
 

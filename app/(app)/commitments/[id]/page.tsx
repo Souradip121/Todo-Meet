@@ -2,10 +2,13 @@
 
 import { useState } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { ArrowLeft, Flame, Copy, Check } from "lucide-react"
+import { ArrowLeft, Flame, Copy, Check, Users } from "lucide-react"
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
 import {
   useCommitment,
   useCommitmentStats,
+  useCommitmentComparisonStats,
+  useCommitmentYearlyStats,
   useShareCommitment,
 } from "@/hooks/use-recurring-commitments"
 import { CommitmentHeatmap } from "@/components/features/commitments/commitment-heatmap"
@@ -13,6 +16,7 @@ import { LogForm } from "@/components/features/commitments/log-form"
 import { WeeklyChart } from "@/components/features/commitments/weekly-chart"
 import { MonthlyChart } from "@/components/features/commitments/monthly-chart"
 import { PeriodProgress } from "@/components/features/commitments/period-progress"
+import { ComparisonChart } from "@/components/features/commitments/comparison-chart"
 import type { TodayCommitment } from "@/lib/types"
 
 function calcStreak(logs: { date: string }[]) {
@@ -51,6 +55,9 @@ export default function CommitmentDetailPage() {
   const { data, isPending } = useCommitment(id)
   const { data: weekly } = useCommitmentStats(id, "weekly")
   const { data: monthly } = useCommitmentStats(id, "monthly")
+  const { data: vsWeekly } = useCommitmentComparisonStats(id, "vs-weekly")
+  const { data: vsMonthly } = useCommitmentComparisonStats(id, "vs-monthly")
+  const { data: yearly } = useCommitmentYearlyStats(id)
   const share = useShareCommitment(id)
   const [copied, setCopied] = useState(false)
 
@@ -136,6 +143,13 @@ export default function CommitmentDetailPage() {
             </div>
           )}
           <button
+            onClick={() => router.push(`/commitments/${id}/match`)}
+            className="flex items-center gap-1.5 text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] border border-[var(--card-border)] hover:bg-[var(--paper-hover)] h-8 px-3 rounded-lg transition-colors"
+          >
+            <Users className="w-3 h-3" />
+            Find duo
+          </button>
+          <button
             onClick={handleShare}
             disabled={share.isPending}
             className="flex items-center gap-1.5 text-xs text-[var(--ink-muted)] hover:text-[var(--ink)] border border-[var(--card-border)] hover:bg-[var(--paper-hover)] h-8 px-3 rounded-lg transition-colors"
@@ -198,9 +212,66 @@ export default function CommitmentDetailPage() {
         <WeeklyChart data={weekly ?? []} color={commitment.color} />
       </div>
 
-      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6">
+      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6 mb-4">
         <p className="text-xs font-medium text-[var(--ink-muted)] uppercase tracking-wider mb-4">Monthly</p>
         <MonthlyChart data={monthly ?? []} color={commitment.color} />
+      </div>
+
+      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6 mb-4">
+        <p className="text-xs font-medium text-[var(--ink-muted)] uppercase tracking-wider mb-4">This week vs last week</p>
+        <ComparisonChart
+          data={vsWeekly ?? []}
+          currentLabel="This week"
+          previousLabel="Last week"
+        />
+      </div>
+
+      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6 mb-4">
+        <p className="text-xs font-medium text-[var(--ink-muted)] uppercase tracking-wider mb-4">This month vs last month</p>
+        <ComparisonChart
+          data={vsMonthly ?? []}
+          currentLabel="This month"
+          previousLabel="Last month"
+        />
+      </div>
+
+      <div className="bg-[var(--card-bg)] border border-[var(--card-border)] rounded-xl p-6">
+        <p className="text-xs font-medium text-[var(--ink-muted)] uppercase tracking-wider mb-4">This year</p>
+        {yearly && yearly.length > 0 ? (
+          <ResponsiveContainer width="100%" height={120}>
+            <BarChart data={yearly} margin={{ top: 4, right: 0, left: -20, bottom: 0 }}>
+              <XAxis
+                dataKey="month"
+                tick={{ fill: "var(--ink-faint)", fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+              />
+              <YAxis
+                tickFormatter={(v) => v >= 60 ? `${Math.round(v / 60)}h` : `${v}m`}
+                tick={{ fill: "var(--ink-faint)", fontSize: 10 }}
+                axisLine={false}
+                tickLine={false}
+                width={28}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--card-bg)",
+                  border: "1px solid #1E1E2E",
+                  borderRadius: "8px",
+                  fontSize: 12,
+                  color: "var(--ink-muted)",
+                }}
+                formatter={(value) => [fmtMinutes(Number(value)), "Time"]}
+                cursor={{ fill: "rgba(255,255,255,0.03)" }}
+              />
+              <Bar dataKey="minutes" fill="#6366F1" fillOpacity={0.8} radius={[3, 3, 0, 0]} maxBarSize={24} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-32 flex items-center justify-center">
+            <p className="text-xs text-[var(--ink-faint)]">No data yet</p>
+          </div>
+        )}
       </div>
     </div>
   )
