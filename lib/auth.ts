@@ -68,10 +68,6 @@ export const auth = betterAuth({
     },
   },
 
-  advanced: {
-    generateId: () => crypto.randomUUID(),
-  },
-
   basePath: "/api/auth",
   secret: process.env.BETTER_AUTH_SECRET!,
   baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
