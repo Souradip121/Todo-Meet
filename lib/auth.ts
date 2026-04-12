@@ -65,6 +65,10 @@ export const auth = betterAuth({
         type: "string",
         required: false,
       },
+      college: {
+        type: "string",
+        required: false,
+      },
     },
   },
 

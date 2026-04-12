@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Flame, LayoutDashboard, CalendarCheck, ListChecks, Timer, Users, LogOut, Trophy, Rss, UserCircle } from "lucide-react"
+import { Flame, LayoutDashboard, CalendarCheck, ListChecks, Users, LogOut, Trophy, Rss, UserCircle } from "lucide-react"
 import { useStreaks } from "@/hooks/use-streaks"
 import { useSession, signOut } from "@/lib/auth-client"
 
@@ -10,7 +10,6 @@ const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/commitments/today", label: "Today", icon: CalendarCheck },
   { href: "/commitments", label: "Commitments", icon: ListChecks },
-  { href: "/focus", label: "Focus", icon: Timer },
   { href: "/groups", label: "Groups", icon: Users },
   { href: "/challenges", label: "Challenges", icon: Trophy },
   { href: "/feed", label: "Feed", icon: Rss },
@@ -30,6 +29,7 @@ export function TopNav() {
   const initials = session?.user?.name
     ? session.user.name.charAt(0).toUpperCase()
     : "?"
+  const avatarUrl = (session?.user as { image?: string } | undefined)?.image ?? null
 
   return (
     <nav
@@ -88,7 +88,7 @@ export function TopNav() {
         <div className="relative group">
           <Link
             href="/profile"
-            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors overflow-hidden"
             style={{
               background: "var(--ink)",
               color: "var(--paper)",
@@ -98,7 +98,11 @@ export function TopNav() {
               textDecoration: "none",
             }}
           >
-            {initials}
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={initials} className="w-8 h-8 object-cover rounded-full" />
+            ) : (
+              initials
+            )}
           </Link>
           <div
             className="absolute right-0 top-10 w-44 overflow-hidden opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all"

@@ -9,6 +9,9 @@ export interface FeedEvent {
   event_type: "log_time" | "challenge_checkin" | "debrief_submitted" | "streak_milestone"
   payload: Record<string, unknown>
   created_at: string
+  event_date: string
+  inspired_count: number
+  i_inspired: boolean
 }
 
 export interface FriendUser {
@@ -35,6 +38,15 @@ export function useFeed() {
     queryKey: ["feed"],
     queryFn: () => apiClient.get("/feed"),
     staleTime: 1000 * 60,
+  })
+}
+
+export function useInspiredReaction() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (args: { actor_id: string; event_type: string; event_date: string }) =>
+      apiClient.post<{ inspired: boolean; inspired_count: number }>("/feed/react", args),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["feed"] }),
   })
 }
 

@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Plus, ChevronDown, ChevronUp, Check } from "lucide-react"
-import { useTodayCommitments } from "@/hooks/use-recurring-commitments"
+import { Plus, ChevronDown, ChevronUp, Check, RotateCcw } from "lucide-react"
+import { useTodayCommitments, useRenewCommitment } from "@/hooks/use-recurring-commitments"
 import { LogForm } from "@/components/features/commitments/log-form"
+import { PhotoUploadButton } from "@/components/features/commitments/photo-upload-button"
 import type { TodayCommitment } from "@/lib/types"
 
 function fmtMins(m: number) {
@@ -12,11 +13,36 @@ function fmtMins(m: number) {
   return `${m} min`
 }
 
+function RenewButton({ commitmentId }: { commitmentId: string }) {
+  const renew = useRenewCommitment(commitmentId)
+  return (
+    <button
+      onClick={() => renew.mutate()}
+      disabled={renew.isPending}
+      className="flex items-center gap-1.5 transition-colors"
+      style={{
+        fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.68rem",
+        letterSpacing: "0.05em", height: "1.9rem", padding: "0 0.75rem",
+        background: "transparent",
+        color: "var(--red-ink)",
+        border: "1px solid rgba(185,28,28,0.3)",
+        cursor: renew.isPending ? "not-allowed" : "pointer",
+        opacity: renew.isPending ? 0.6 : 1,
+      }}
+    >
+      <RotateCcw className="w-3 h-3" />
+      {renew.isPending ? "Renewing…" : "Renew"}
+    </button>
+  )
+}
+
 export default function TodayPage() {
   const { data: commitments, isPending } = useTodayCommitments()
   const [expanded, setExpanded] = useState<string | null>(null)
 
-  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
+  const now = new Date()
+  const today = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`
 
   if (isPending) {
     return (
@@ -67,21 +93,23 @@ export default function TodayPage() {
                 <span style={{ fontSize: "1.25rem" }}>{c.emoji}</span>
                 <div>
                   <p style={{ fontFamily: "var(--font-playfair), serif", fontSize: "1rem", fontWeight: 700, color: "var(--ink)" }}>{c.name}</p>
-                  {c.today_logged && c.today_minutes ? (
-                    <div className="flex items-center gap-2 mt-0.5">
+                  {c.status === "pending_review" ? (
+                    <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.68rem", color: "var(--red-ink)", marginTop: "0.2rem", opacity: 0.7 }}>Period expired · renew to continue</p>
+                  ) : c.today_logged && c.today_minutes ? (
+                    <div>
                       <p className="flex items-center gap-1" style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.68rem", color: "var(--green-ink)" }}>
                         <Check className="w-3 h-3" />
                         {fmtMins(c.today_minutes)}
                         {c.today_note && <span style={{ color: "var(--ink-faint)" }}> · {c.today_note}</span>}
                       </p>
-                      {c.today_photo_url && (
-                        <img src={c.today_photo_url} alt="proof"
-                          className="w-8 h-8 object-cover cursor-pointer"
-                          style={{ border: "1px solid var(--card-border)" }}
-                          onClick={() => window.open(c.today_photo_url!, "_blank")}
-                          title="View photo proof"
+                      {/* Photo button always visible after logging */}
+                      <div className="mt-1.5">
+                        <PhotoUploadButton
+                          commitmentId={c.id}
+                          date={c.today_log_date ?? todayStr}
+                          existingPhotoUrl={c.today_photo_url}
                         />
-                      )}
+                      </div>
                     </div>
                   ) : (
                     <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.68rem", color: "var(--ink-faint)", marginTop: "0.2rem" }}>Not logged yet</p>
@@ -89,29 +117,33 @@ export default function TodayPage() {
                 </div>
               </div>
 
-              <button
-                onClick={() => setExpanded(expanded === c.id ? null : c.id)}
-                className="flex items-center gap-1.5 transition-colors"
-                style={{
-                  fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.68rem",
-                  letterSpacing: "0.05em", height: "1.9rem", padding: "0 0.75rem",
-                  background: c.today_logged ? "transparent" : "var(--ink)",
-                  color: c.today_logged ? "var(--ink-muted)" : "var(--paper)",
-                  border: c.today_logged ? "1px solid var(--card-border)" : "none",
-                  cursor: "pointer",
-                }}
-              >
-                {c.today_logged ? (
-                  <>{expanded === c.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />} Edit</>
-                ) : (
-                  <><Plus className="w-3 h-3" /> Log</>
-                )}
-              </button>
+              {c.status === "pending_review" ? (
+                <RenewButton commitmentId={c.id} />
+              ) : (
+                <button
+                  onClick={() => setExpanded(expanded === c.id ? null : c.id)}
+                  className="flex items-center gap-1.5 transition-colors"
+                  style={{
+                    fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.68rem",
+                    letterSpacing: "0.05em", height: "1.9rem", padding: "0 0.75rem",
+                    background: c.today_logged ? "transparent" : "var(--ink)",
+                    color: c.today_logged ? "var(--ink-muted)" : "var(--paper)",
+                    border: c.today_logged ? "1px solid var(--card-border)" : "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  {c.today_logged ? (
+                    <>{expanded === c.id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />} Edit</>
+                  ) : (
+                    <><Plus className="w-3 h-3" /> Log</>
+                  )}
+                </button>
+              )}
             </div>
 
-            {expanded === c.id && (
+            {expanded === c.id && c.status !== "pending_review" && (
               <div className="px-5 pb-5" style={{ borderTop: "1px solid var(--rule)", paddingTop: "1rem" }}>
-                <LogForm commitment={c} existingMinutes={c.today_minutes} onSaved={() => setExpanded(null)} />
+                <LogForm commitment={c} existingMinutes={c.today_minutes} onSaved={() => setExpanded(null)} existingPhotoUrl={c.today_photo_url} />
               </div>
             )}
           </div>

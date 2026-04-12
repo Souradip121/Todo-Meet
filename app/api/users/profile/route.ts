@@ -39,6 +39,7 @@ export async function PATCH(req: NextRequest) {
   }
   if (body.timezone !== undefined)     updates.timezone = body.timezone
   if (body.college_url !== undefined)  updates.collegeUrl = body.college_url
+  if (body.college !== undefined)      updates.college = body.college
   if (body.current_focus !== undefined) updates.currentFocus = body.current_focus
 
   if (Object.keys(updates).length === 0) {

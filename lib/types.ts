@@ -147,6 +147,7 @@ export interface CommitmentLog {
 
 export interface TodayCommitment extends RecurringCommitment {
   today_logged: boolean
+  today_log_date: string | null
   today_minutes: number | null
   today_time_start: string | null
   today_time_end: string | null

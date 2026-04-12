@@ -9,9 +9,13 @@ export async function GET(req: NextRequest) {
   if (error) return error
 
   const commitmentId = req.nextUrl.searchParams.get("commitment_id")
-  const yearAgo = new Date()
+  // Use the date from the client's local timezone if provided, otherwise fall back to UTC
+  const clientDate = req.nextUrl.searchParams.get("today")
+  const yearAgo = clientDate ? new Date(clientDate) : new Date()
   yearAgo.setFullYear(yearAgo.getFullYear() - 1)
-  const yearAgoStr = yearAgo.toISOString().split("T")[0]
+  const yearAgoStr = clientDate
+    ? `${yearAgo.getFullYear()}-${String(yearAgo.getMonth() + 1).padStart(2, "0")}-${String(yearAgo.getDate()).padStart(2, "0")}`
+    : yearAgo.toISOString().split("T")[0]
 
   if (commitmentId) {
     // Per-commitment grid: aggregate duration_minutes → score 0-5

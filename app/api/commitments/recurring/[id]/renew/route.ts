@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/auth-guard"
 import { db } from "@/lib/db"
 import { recurringCommitments } from "@/lib/db/schema"
 import { eq, and } from "drizzle-orm"
+import { serializeCommitment } from "@/lib/db/serialize"
 
 export async function POST(
   _req: NextRequest,
@@ -30,5 +31,5 @@ export async function POST(
     .where(eq(recurringCommitments.id, id))
     .returning()
 
-  return NextResponse.json(updated)
+  return NextResponse.json(serializeCommitment(updated))
 }

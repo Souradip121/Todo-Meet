@@ -8,17 +8,22 @@ interface IntegrityGridProps {
   onDayClick: (day: DayScore) => void
 }
 
-// Build a 365-day array ending today
-function buildCalendar(days: DayScore[]): { date: string; score: DayScore | null }[] {
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const scoreMap = new Map(days.map((d) => [d.date, d]))
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
+/** Format a Date as local YYYY-MM-DD (no UTC conversion) */
+function localDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
+// Build a 365-day array ending today (all dates in local timezone)
+function buildCalendar(days: DayScore[]): { date: string; score: DayScore | null }[] {
+  const scoreMap = new Map(days.map((d) => [d.date, d]))
   const result: { date: string; score: DayScore | null }[] = []
+
   for (let i = 364; i >= 0; i--) {
-    const d = new Date(today)
+    const d = new Date()
     d.setDate(d.getDate() - i)
-    const key = d.toISOString().slice(0, 10)
+    const key = localDate(d)
     result.push({ date: key, score: scoreMap.get(key) ?? null })
   }
   return result
@@ -28,10 +33,11 @@ function getMonthLabels(calendar: { date: string }[], firstDow: number): { col: 
   const labels: { col: number; label: string }[] = []
   let lastMonth = -1
   calendar.forEach((day, idx) => {
-    const m = new Date(day.date).getUTCMonth()
+    // Parse month directly from the string to avoid any timezone conversion
+    const m = parseInt(day.date.slice(5, 7)) - 1
     const col = Math.floor((idx + firstDow) / 7)
     if (m !== lastMonth) {
-      labels.push({ col, label: new Date(day.date).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }) })
+      labels.push({ col, label: MONTHS[m] })
       lastMonth = m
     }
   })
@@ -39,31 +45,26 @@ function getMonthLabels(calendar: { date: string }[], firstDow: number): { col: 
 }
 
 export function IntegrityGrid({ days, onDayClick }: IntegrityGridProps) {
-  const today = new Date().toISOString().slice(0, 10)
+  const todayStr = localDate(new Date())
   const calendar = buildCalendar(days)
   const firstDow = new Date(calendar[0].date + "T00:00:00").getDay()
   const monthLabels = getMonthLabels(calendar, firstDow)
 
-  // Pad start so week starts on Sunday aligned with first day
   const padded = Array(firstDow).fill(null).concat(calendar)
 
   return (
     <div className="overflow-x-auto">
-      {/* Month labels */}
-      <div className="flex mb-1">
-        {monthLabels.map(({ col, label }, i) => {
-          const prevCol = i === 0 ? 0 : monthLabels[i - 1].col
-          const ml = (col - prevCol) * 17
-          return (
-            <div
-              key={`${col}-${label}`}
-              className="text-xs text-slate-600 shrink-0"
-              style={{ width: 17, marginLeft: ml }}
-            >
-              {label}
-            </div>
-          )
-        })}
+      {/* Month labels — positioned absolutely so each label sits at col * 17px */}
+      <div className="relative mb-1" style={{ height: 16 }}>
+        {monthLabels.map(({ col, label }) => (
+          <div
+            key={`${col}-${label}`}
+            className="absolute text-xs text-slate-600"
+            style={{ left: col * 17 }}
+          >
+            {label}
+          </div>
+        ))}
       </div>
 
       {/* Grid */}
@@ -77,7 +78,7 @@ export function IntegrityGrid({ days, onDayClick }: IntegrityGridProps) {
           }
           const { date, score } = cell
           const scoreVal = score?.score ?? 0
-          const isToday = date === today
+          const isToday = date === todayStr
           const isPerfect = scoreVal === 5
 
           return (

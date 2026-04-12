@@ -2,15 +2,20 @@ import { useQuery } from "@tanstack/react-query"
 import { apiClient } from "@/lib/api-client"
 import type { DayScore } from "@/lib/types"
 
+function localDateStr(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
 export function useGrid(commitmentId?: string) {
-  const endpoint =
-    commitmentId && commitmentId !== "all"
-      ? `/scores/grid?commitment_id=${commitmentId}`
-      : "/scores/grid"
+  const today = localDateStr()
+  const base = commitmentId && commitmentId !== "all"
+    ? `/scores/grid?commitment_id=${commitmentId}&today=${today}`
+    : `/scores/grid?today=${today}`
 
   return useQuery<DayScore[]>({
     queryKey: ["grid", commitmentId ?? "all"],
-    queryFn: () => apiClient.get(endpoint),
+    queryFn: () => apiClient.get(base),
     staleTime: 1000 * 60 * 60 * 24, // 24h
   })
 }
@@ -23,4 +28,3 @@ export function useDayReplay(date: string | null) {
     staleTime: 1000 * 60 * 60 * 24,
   })
 }
-

@@ -27,10 +27,16 @@ export function useCommitment(id: string) {
   })
 }
 
+function localTodayStr(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
 export function useTodayCommitments() {
+  const today = localTodayStr()
   return useQuery<TodayCommitment[]>({
-    queryKey: ["commitments", "today"],
-    queryFn: () => apiClient.get("/commitments/today"),
+    queryKey: ["commitments", "today", today],
+    queryFn: () => apiClient.get(`/commitments/today?today=${today}`),
     staleTime: 1000 * 30,
   })
 }

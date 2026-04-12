@@ -21,6 +21,7 @@ export const users = pgTable("users", {
   onboardingComplete:     boolean("onboarding_complete").notNull().default(false),
   currentFocus:           text("current_focus"),
   collegeUrl:             text("college_url"),
+  college:                text("college"),
   createdAt:              timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt:              timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 })
@@ -291,3 +292,17 @@ export const duoMatchSwipes = pgTable("duo_match_swipes", {
   direction:    text("direction").notNull(),
   createdAt:    timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [unique().on(t.swiperId, t.swipedId, t.commitmentId)])
+
+// ── Feed Reactions ─────────────────────────────────────────────────────────
+// Keyed by (actor_id, event_type, event_date) — uniquely identifies a feed event.
+export const feedReactions = pgTable("feed_reactions", {
+  id:        uuid("id").primaryKey().defaultRandom(),
+  actorId:   text("actor_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  eventType: text("event_type").notNull(),
+  eventDate: date("event_date").notNull(),
+  reactorId: text("reactor_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  unique().on(t.actorId, t.eventType, t.eventDate, t.reactorId),
+  index("fr_actor_event").on(t.actorId, t.eventType, t.eventDate),
+])

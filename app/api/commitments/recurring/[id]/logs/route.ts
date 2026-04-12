@@ -27,10 +27,15 @@ export async function POST(
     return NextResponse.json({ error: "date and duration_minutes > 0 are required" }, { status: 422 })
   }
 
-  // Only allow today or yesterday
-  const today = new Date().toISOString().split("T")[0]
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0]
-  if (date !== today && date !== yesterday) {
+  // Allow "today or yesterday" in the client's local timezone.
+  // UTC clock can be up to 14h behind the client, so we accept anything
+  // within [utcYesterday, utcTomorrow] to cover all timezone offsets.
+  const now = new Date()
+  const utcYesterday = new Date(now); utcYesterday.setUTCDate(now.getUTCDate() - 1)
+  const utcTomorrow  = new Date(now); utcTomorrow.setUTCDate(now.getUTCDate() + 1)
+  const minDate = utcYesterday.toISOString().slice(0, 10)
+  const maxDate = utcTomorrow.toISOString().slice(0, 10)
+  if (date < minDate || date > maxDate) {
     return NextResponse.json({ error: "Can only log today or yesterday" }, { status: 422 })
   }
 

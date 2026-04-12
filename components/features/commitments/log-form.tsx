@@ -14,6 +14,16 @@ const QUICK_PILLS = [
   { label: "2h", value: 120 },
 ]
 
+function localDateStr(d = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
+function localYesterdayStr(): string {
+  const d = new Date()
+  d.setDate(d.getDate() - 1)
+  return localDateStr(d)
+}
+
 interface LogFormProps {
   commitment: TodayCommitment | { id: string; target_min_day: number | null }
   defaultDate?: "today" | "yesterday"
@@ -29,13 +39,13 @@ export function LogForm({ commitment, defaultDate = "today", existingMinutes, ex
   const [timeEnd, setTimeEnd] = useState("")
   const [note, setNote] = useState("")
   const [showTimeRange, setShowTimeRange] = useState(false)
-  const [savedDate, setSavedDate] = useState<string | null>(existingMinutes ? (defaultDate === "today" ? new Date().toISOString().slice(0, 10) : new Date(Date.now() - 86400000).toISOString().slice(0, 10)) : null)
+  const [savedDate, setSavedDate] = useState<string | null>(
+    existingMinutes ? (defaultDate === "today" ? localDateStr() : localYesterdayStr()) : null
+  )
   const logTime = useLogTime(commitment.id)
 
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-  const yesterdayStr = yesterday.toISOString().slice(0, 10)
-  const todayStr = new Date().toISOString().slice(0, 10)
+  const todayStr = localDateStr()
+  const yesterdayStr = localYesterdayStr()
 
   function handleQuickPill(val: number) {
     setMinutes(String(val))

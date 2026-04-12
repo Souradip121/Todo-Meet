@@ -16,6 +16,8 @@ const r2 = new S3Client({
 })
 
 const BUCKET = process.env.R2_BUCKET!
+const MAX_SIZE = 5 * 1024 * 1024 // 5 MB
+const ALLOWED = ["image/jpeg", "image/png", "image/webp"]
 
 export async function POST(
   req: NextRequest,
@@ -33,7 +35,7 @@ export async function POST(
     .limit(1)
   if (!commitment) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
-  // Log must exist before uploading proof
+  // Log must exist
   const [log] = await db
     .select({ id: commitmentLogs.id })
     .from(commitmentLogs)
@@ -41,31 +43,47 @@ export async function POST(
     .limit(1)
   if (!log) return NextResponse.json({ error: "Log entry required before uploading photo" }, { status: 422 })
 
-  // Date guard
-  const today = new Date().toISOString().split("T")[0]
-  const yesterday = new Date(Date.now() - 86400000).toISOString().split("T")[0]
-  if (date !== today && date !== yesterday) {
+  // Date guard — accept [utcYesterday, utcTomorrow] to cover all timezone offsets
+  const now = new Date()
+  const utcYesterday = new Date(now); utcYesterday.setUTCDate(now.getUTCDate() - 1)
+  const utcTomorrow  = new Date(now); utcTomorrow.setUTCDate(now.getUTCDate() + 1)
+  const minDate = utcYesterday.toISOString().slice(0, 10)
+  const maxDate = utcTomorrow.toISOString().slice(0, 10)
+  if (date < minDate || date > maxDate) {
     return NextResponse.json({ error: "Can only upload photos for today or yesterday" }, { status: 422 })
   }
 
-  // Content-type from query param (default jpeg)
-  const contentType = req.nextUrl.searchParams.get("type") ?? "image/jpeg"
-  const ext = contentType === "image/png" ? "png" : contentType === "image/webp" ? "webp" : "jpg"
+  // Parse multipart
+  const form = await req.formData()
+  const file = form.get("file") as File | null
+  if (!file) return NextResponse.json({ error: "file is required" }, { status: 422 })
+  if (!ALLOWED.includes(file.type)) return NextResponse.json({ error: "Only JPEG, PNG and WebP allowed" }, { status: 422 })
+  if (file.size > MAX_SIZE) return NextResponse.json({ error: "Photo must be under 5 MB" }, { status: 422 })
+
+  const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg"
   const key = `commitments/${user.id}/${id}/${date}.${ext}`
 
-  // Presigned PUT — valid 5 minutes for upload
-  const uploadUrl = await getSignedUrl(
-    r2,
-    new PutObjectCommand({ Bucket: BUCKET, Key: key, ContentType: contentType }),
-    { expiresIn: 300 },
-  )
+  // Upload to R2 server-side (no CORS issues)
+  const buffer = Buffer.from(await file.arrayBuffer())
+  await r2.send(new PutObjectCommand({
+    Bucket: BUCKET,
+    Key: key,
+    Body: buffer,
+    ContentType: file.type,
+  }))
 
-  // Presigned GET — valid 7 days for display
-  const downloadUrl = await getSignedUrl(
+  // Presigned GET URL — 7-day expiry for display
+  const photoUrl = await getSignedUrl(
     r2,
     new GetObjectCommand({ Bucket: BUCKET, Key: key }),
     { expiresIn: 604800 },
   )
 
-  return NextResponse.json({ upload_url: uploadUrl, download_url: downloadUrl })
+  // Store in DB
+  await db
+    .update(commitmentLogs)
+    .set({ photoUrl })
+    .where(and(eq(commitmentLogs.commitmentId, id), eq(commitmentLogs.date, date)))
+
+  return NextResponse.json({ photo_url: photoUrl })
 }

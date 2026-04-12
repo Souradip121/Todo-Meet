@@ -88,7 +88,13 @@ export async function GET(
     `)
     const current = rows.rows.filter((r: Record<string, unknown>) => r.period === "current")
     const previous = rows.rows.filter((r: Record<string, unknown>) => r.period === "previous")
-    return NextResponse.json({ current, previous })
+    const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    const merged = current.map((c: Record<string, unknown>, i: number) => ({
+      label: DAY_LABELS[i] ?? String(i + 1),
+      current: Number(c.minutes),
+      previous: Number((previous[i] as Record<string, unknown>)?.minutes ?? 0),
+    }))
+    return NextResponse.json(merged)
   }
 
   if (period === "vs-monthly") {
@@ -119,7 +125,12 @@ export async function GET(
     `)
     const current = rows.rows.filter((r: Record<string, unknown>) => r.period === "current")
     const previous = rows.rows.filter((r: Record<string, unknown>) => r.period === "previous")
-    return NextResponse.json({ current, previous })
+    const merged = current.map((c: Record<string, unknown>, i: number) => ({
+      label: String(i + 1),
+      current: Number(c.minutes),
+      previous: Number((previous[i] as Record<string, unknown>)?.minutes ?? 0),
+    }))
+    return NextResponse.json(merged)
   }
 
   if (period === "yearly") {

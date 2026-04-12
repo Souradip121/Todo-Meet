@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/auth-guard"
 import { db } from "@/lib/db"
 import { recurringCommitments, commitmentLogs } from "@/lib/db/schema"
 import { eq, and, gte, sql } from "drizzle-orm"
+import { serializeCommitment, serializeLog } from "@/lib/db/serialize"
 
 export async function GET(
   _req: NextRequest,
@@ -34,7 +35,7 @@ export async function GET(
     )
     .orderBy(commitmentLogs.date)
 
-  return NextResponse.json({ ...commitment, logs })
+  return NextResponse.json({ commitment: serializeCommitment(commitment), logs: logs.map(serializeLog) })
 }
 
 export async function PATCH(
@@ -61,7 +62,7 @@ export async function PATCH(
     .returning()
 
   if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 })
-  return NextResponse.json(updated)
+  return NextResponse.json(serializeCommitment(updated))
 }
 
 export async function DELETE(

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth-guard"
 import { db } from "@/lib/db"
 import { recurringCommitments } from "@/lib/db/schema"
-import { eq, ne, and, sql } from "drizzle-orm"
+import { eq, ne, and } from "drizzle-orm"
+import { serializeCommitment } from "@/lib/db/serialize"
 
 export async function GET(req: NextRequest) {
   const { user, error } = await requireAuth()
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
     )
     .orderBy(recurringCommitments.createdAt)
 
-  return NextResponse.json(list)
+  return NextResponse.json(list.map(serializeCommitment))
 }
 
 export async function POST(req: NextRequest) {
@@ -56,5 +57,5 @@ export async function POST(req: NextRequest) {
     })
     .returning()
 
-  return NextResponse.json(commitment, { status: 201 })
+  return NextResponse.json(serializeCommitment(commitment), { status: 201 })
 }
