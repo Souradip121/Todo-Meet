@@ -52,6 +52,7 @@ export default function OnboardingPage() {
   const [emoji, setEmoji] = useState("💻")
   const [name, setName] = useState("")
   const [periodDays, setPeriodDays] = useState(30)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
 
   const [step, setStep] = useState<"college" | "pick" | "logging">("college")
   const [createdId, setCreatedId] = useState<string | null>(null)
@@ -96,9 +97,11 @@ export default function OnboardingPage() {
   function handleLogAndGo() {
     if (!createdId) return
     const mins = parseInt(minutes)
+    const d = new Date()
+    const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
     if (mins > 0) {
       logTime.mutate(
-        { duration_minutes: mins },
+        { duration_minutes: mins, date: todayStr },
         {
           onSuccess: () => {
             fireOnboardingComplete()
@@ -236,6 +239,11 @@ export default function OnboardingPage() {
           }}>
             {logTime.isPending ? "Saving…" : minutes ? "Log & start →" : "Skip for now →"}
           </button>
+          {logTime.isError && (
+            <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.72rem", color: "var(--red-ink)", textAlign: "center" }}>
+              Something went wrong. Please try again.
+            </p>
+          )}
         </div>
       </div>
     )
@@ -271,13 +279,43 @@ export default function OnboardingPage() {
       <div className="w-full space-y-2">
         <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", letterSpacing: "0.1em", color: "var(--ink-faint)" }}>Or type your own:</p>
         <div className="flex gap-2">
-          <input type="text" value={PRESETS.some((p) => p.emoji === emoji) ? "" : emoji}
-            onChange={(e) => setEmoji(e.target.value.slice(-2) || "⚡")}
-            placeholder="emoji" maxLength={2}
-            style={{ ...inputStyle, width: "3rem", textAlign: "center", padding: 0, flex: "none" }}
-            onFocus={(e) => { e.currentTarget.style.borderColor = "var(--red-ink)" }}
-            onBlur={(e) => { e.currentTarget.style.borderColor = "var(--card-border)" }}
-          />
+          <div style={{ position: "relative", flex: "none" }}>
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker((v) => !v)}
+              style={{
+                ...inputStyle, width: "3rem", padding: 0, textAlign: "center",
+                fontSize: "1.2rem", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                border: showEmojiPicker ? "1.5px solid var(--red-ink)" : "1.5px solid var(--card-border)",
+              }}
+            >
+              {emoji}
+            </button>
+            {showEmojiPicker && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 4px)", left: 0, zIndex: 100,
+                background: "var(--card-bg)", border: "1.5px solid var(--card-border)",
+                padding: "0.5rem", display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "2px",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+              }}>
+                {["🏋️","🐍","💻","📚","🧘","✍️","🎸","🏃","🎨","🧠","📝","🎯","🏊","🚴","🌱","🧪","🎹","🏄","🎤","💪","🎓","🏀","⚽","🎮","☀️","🌙","⚡","🔥","🍎","🎵"].map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => { setEmoji(e); setShowEmojiPicker(false) }}
+                    style={{
+                      fontSize: "1.25rem", width: "2rem", height: "2rem", display: "flex",
+                      alignItems: "center", justifyContent: "center", cursor: "pointer",
+                      background: emoji === e ? "rgba(185,28,28,0.08)" : "transparent",
+                      border: "none", borderRadius: "4px",
+                    }}
+                  >
+                    {e}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           <input type="text" value={name} onChange={(e) => setName(e.target.value)}
             placeholder="What are you committing to?" maxLength={80}
             style={{ ...inputStyle, flex: 1, width: "auto" }}
@@ -305,15 +343,22 @@ export default function OnboardingPage() {
         </div>
       </div>
 
-      <button onClick={handleStart} disabled={!name.trim() || createCommitment.isPending}
-        style={{
-          width: "100%", background: "var(--ink)", color: "var(--paper)", border: "none",
-          height: "2.8rem", fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.9rem",
-          letterSpacing: "0.05em", cursor: !name.trim() || createCommitment.isPending ? "not-allowed" : "pointer",
-          opacity: !name.trim() || createCommitment.isPending ? 0.5 : 1,
-        }}>
-        {createCommitment.isPending ? "Starting…" : "Start →"}
-      </button>
+      <div className="w-full space-y-2">
+        <button onClick={handleStart} disabled={!name.trim() || createCommitment.isPending}
+          style={{
+            width: "100%", background: "var(--ink)", color: "var(--paper)", border: "none",
+            height: "2.8rem", fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.9rem",
+            letterSpacing: "0.05em", cursor: !name.trim() || createCommitment.isPending ? "not-allowed" : "pointer",
+            opacity: !name.trim() || createCommitment.isPending ? 0.5 : 1,
+          }}>
+          {createCommitment.isPending ? "Starting…" : "Start →"}
+        </button>
+        {createCommitment.isError && (
+          <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.72rem", color: "var(--red-ink)", textAlign: "center" }}>
+            Something went wrong. Please try again.
+          </p>
+        )}
+      </div>
     </div>
   )
 }
