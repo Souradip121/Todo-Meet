@@ -16,7 +16,7 @@ export function useGrid(commitmentId?: string) {
   return useQuery<DayScore[]>({
     queryKey: ["grid", commitmentId ?? "all"],
     queryFn: () => apiClient.get(base),
-    staleTime: 1000 * 60 * 60 * 24, // 24h
+    staleTime: 1000 * 60, // 1 min — grid invalidated after log; fresh data on each page visit
   })
 }
 

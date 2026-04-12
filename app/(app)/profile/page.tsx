@@ -45,7 +45,7 @@ export default function ProfilePage() {
 
   // Editable fields
   const [displayName, setDisplayName] = useState("")
-  const [collegeURL, setCollegeURL] = useState("")
+  const [college, setCollege] = useState("")
   const [editingName, setEditingName] = useState(false)
   const [editingCollege, setEditingCollege] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -53,17 +53,17 @@ export default function ProfilePage() {
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name)
-      setCollegeURL(profile.college_url ?? "")
+      setCollege((profile as unknown as Record<string, string>).college ?? "")
     }
   }, [profile])
 
-  async function save(field: "display_name" | "college_url") {
+  async function save(field: "display_name" | "college") {
     setSaving(true)
     try {
       await updateProfile.mutateAsync(
         field === "display_name"
           ? { display_name: displayName }
-          : { college_url: collegeURL || null }
+          : { college: college || null }
       )
       setEditingName(false)
       setEditingCollege(false)
@@ -75,7 +75,7 @@ export default function ProfilePage() {
   const accepted = friends.filter((f) => f.status === "accepted")
   const pending = friends.filter((f) => f.status === "pending")
 
-  const filteredChallenges = collegeFilter && profile?.college_url
+  const filteredChallenges = collegeFilter && college
     ? challenges.filter(() => true) // future: filter by college
     : challenges
 
@@ -90,9 +90,13 @@ export default function ProfilePage() {
       <div style={{ background: "var(--card-bg)", border: "1.5px solid var(--card-border)", padding: "1.8rem", marginBottom: "1.6rem" }}>
         <div style={{ display: "flex", gap: "1.5rem", alignItems: "flex-start" }}>
           {/* Avatar */}
-          <div style={{ width: 64, height: 64, borderRadius: "50%", background: avatarColor(profile.id), display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-ibm-mono), monospace", fontSize: "1.1rem", color: "#fff", flexShrink: 0 }}>
-            {initials(profile.display_name)}
-          </div>
+          {profile.avatar_url ? (
+            <img src={profile.avatar_url} alt={profile.display_name} style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+          ) : (
+            <div style={{ width: 64, height: 64, borderRadius: "50%", background: avatarColor(profile.id), display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "var(--font-ibm-mono), monospace", fontSize: "1.1rem", color: "#fff", flexShrink: 0 }}>
+              {initials(profile.display_name)}
+            </div>
+          )}
 
           <div style={{ flex: 1 }}>
             {/* Display name */}
@@ -124,19 +128,19 @@ export default function ProfilePage() {
               <p style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.7rem", color: "var(--ink-faint)", marginTop: "0.2rem" }}>@{profile.username} · {profile.email}</p>
             </div>
 
-            {/* College URL */}
+            {/* College */}
             <div>
-              <label style={labelStyle}>College / Institution URL</label>
+              <label style={labelStyle}>College / Institution</label>
               {editingCollege ? (
                 <div style={{ display: "flex", gap: "0.5rem" }}>
-                  <input autoFocus value={collegeURL} onChange={(e) => setCollegeURL(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") save("college_url"); if (e.key === "Escape") setEditingCollege(false) }}
-                    placeholder="https://iitk.ac.in"
+                  <input autoFocus value={college} onChange={(e) => setCollege(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") save("college"); if (e.key === "Escape") setEditingCollege(false) }}
+                    placeholder="e.g. JIS College of Engineering"
                     style={{ ...inputStyle, flex: 1 }}
                     onFocus={(e) => { e.currentTarget.style.borderColor = "var(--red-ink)" }}
                     onBlur={(e) => { e.currentTarget.style.borderColor = "var(--card-border)" }}
                   />
-                  <button onClick={() => save("college_url")} disabled={saving} style={{ background: "var(--ink)", color: "var(--paper)", border: "none", width: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <button onClick={() => save("college")} disabled={saving} style={{ background: "var(--ink)", color: "var(--paper)", border: "none", width: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     <Check className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => setEditingCollege(false)} style={{ background: "none", border: "1.5px solid var(--card-border)", width: 36, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-faint)" }}>
@@ -145,8 +149,8 @@ export default function ProfilePage() {
                 </div>
               ) : (
                 <div className="flex items-center gap-2 group">
-                  {profile.college_url ? (
-                    <span style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.72rem", color: "var(--ink)", background: "var(--paper)", border: "1px solid var(--card-border)", padding: "0.2rem 0.6rem" }}>{profile.college_url}</span>
+                  {college ? (
+                    <span style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.72rem", color: "var(--ink)", background: "var(--paper)", border: "1px solid var(--card-border)", padding: "0.2rem 0.6rem" }}>{college}</span>
                   ) : (
                     <span style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.72rem", color: "var(--ink-faint)" }}>Not set</span>
                   )}
@@ -166,7 +170,7 @@ export default function ProfilePage() {
         <div>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.9rem" }}>
             <div style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.62rem", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-faint)" }}>Challenges</div>
-            {profile.college_url && (
+            {college && (
               <button
                 onClick={() => setCollegeFilter((v) => !v)}
                 style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.6rem", letterSpacing: "0.06em", background: collegeFilter ? "var(--ink)" : "transparent", color: collegeFilter ? "var(--paper)" : "var(--ink-muted)", border: "1px solid var(--card-border)", padding: "0.22rem 0.6rem", cursor: "pointer" }}
@@ -204,7 +208,7 @@ export default function ProfilePage() {
             onFocus={(e) => { e.currentTarget.style.borderColor = "var(--red-ink)" }}
             onBlur={(e) => { e.currentTarget.style.borderColor = "var(--card-border)" }}
           />
-          {profile.college_url && (
+          {college && (
             <div style={{ marginBottom: "0.5rem" }}>
               <button
                 onClick={() => setCollegeSearchFilter((v) => !v)}

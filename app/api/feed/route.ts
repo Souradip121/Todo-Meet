@@ -107,9 +107,9 @@ export async function GET() {
              BOOL_OR(reactor_id = ${user.id})            AS i_inspired
       FROM feed_reactions
       GROUP BY actor_id, event_type, event_date
-    ) r ON r.actor_id   = e.actor_id
-       AND r.event_type = e.event_type
-       AND r.event_date = e.event_date
+    ) r ON r.actor_id        = e.actor_id
+       AND r.event_type      = e.event_type
+       AND r.event_date::text = e.event_date
     ORDER BY e.created_at DESC
     LIMIT 50
   `)

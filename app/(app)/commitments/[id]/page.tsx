@@ -110,6 +110,7 @@ export default function CommitmentDetailPage() {
     today_time_end: todayLog?.time_end ?? null,
     today_note: todayLog?.note ?? null,
     today_photo_url: todayLog?.photo_url ?? null,
+    today_log_date: todayLog?.date ?? null,
   }
 
   const endDate = new Date(commitment.end_date)

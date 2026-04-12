@@ -22,3 +22,4 @@ showup-api/showup-api
 .DS_Store
 *.log
 .vercel
+.env.vercel

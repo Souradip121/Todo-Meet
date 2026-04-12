@@ -1,9 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { Pencil, Check, X, Shield } from "lucide-react"
+import { Pencil, Check, X } from "lucide-react"
 import { useGrid } from "@/hooks/use-grid"
-import { useStreaks, useFreezeStreak } from "@/hooks/use-streaks"
+import { useStreaks } from "@/hooks/use-streaks"
 import { useGridStore } from "@/store/grid"
 import { useCommitments } from "@/hooks/use-recurring-commitments"
 import { IntegrityGrid } from "@/components/features/grid/integrity-grid"
@@ -22,7 +22,6 @@ export default function DashboardPage() {
   useSession() // keep auth session alive
   const { data: profile } = useProfile()
   const [selectedDay, setSelectedDay] = useState<DayScore | null>(null)
-  const freezeStreak = useFreezeStreak()
   const { data: activeSessions } = useActiveSessions()
   const [editingFocus, setEditingFocus] = useState(false)
   const [focusInput, setFocusInput] = useState("")
@@ -103,22 +102,6 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {streaks && streaks.current > 0 && (
-            <div style={{ marginTop: "0.75rem", paddingTop: "0.75rem", borderTop: "1px solid var(--rule)" }}>
-              <div className="flex items-center gap-1.5">
-                <Shield className="w-3 h-3" style={{ color: (streaks.freezes_remaining ?? 0) > 0 ? "var(--stamp-blue)" : "var(--ink-faint)" }} />
-                <span style={{ fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", color: (streaks.freezes_remaining ?? 0) > 0 ? "var(--ink-muted)" : "var(--ink-faint)" }}>
-                  {(streaks.freezes_remaining ?? 0) > 0 ? "1 freeze available" : "No freezes left"}
-                </span>
-              </div>
-              {(streaks.freezes_remaining ?? 0) > 0 && last7.length > 0 && last7[last7.length - 1]?.score === 0 && (
-                <button onClick={() => freezeStreak.mutate()} disabled={freezeStreak.isPending}
-                  style={{ marginTop: "0.4rem", fontFamily: "var(--font-ibm-mono), monospace", fontSize: "0.65rem", color: "var(--red-ink)", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
-                  {freezeStreak.isPending ? "Freezing…" : "Use freeze →"}
-                </button>
-              )}
-            </div>
-          )}
         </div>
 
         <StatCard label="Perfect Days" value={perfectDays} suffix="this year" mono />
