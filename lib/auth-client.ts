@@ -23,6 +23,7 @@ export async function updateProfile(body: {
   display_name?: string
   timezone?: string
   college_url?: string | null
+  college?: string | null
   avatar_url?: string | null
   current_focus?: string | null
 }) {

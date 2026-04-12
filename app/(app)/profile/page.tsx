@@ -53,7 +53,7 @@ export default function ProfilePage() {
   useEffect(() => {
     if (profile) {
       setDisplayName(profile.display_name)
-      setCollege((profile as unknown as Record<string, string>).college ?? "")
+      setCollege(profile.college ?? "")
     }
   }, [profile])
 

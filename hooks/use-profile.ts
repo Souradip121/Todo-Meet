@@ -10,6 +10,7 @@ export interface UserProfile {
   display_name: string
   avatar_url: string | null
   college_url: string | null
+  college: string | null
   timezone: string
   current_focus: string | null
   streak_freezes_remaining: number
@@ -31,6 +32,7 @@ export function useUpdateProfile() {
     mutationFn: (body: {
       display_name?: string
       college_url?: string | null
+      college?: string | null
       avatar_url?: string | null
       timezone?: string
     }) => updateProfile(body),
